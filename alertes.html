@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes Alertes — MandatScrap</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --noir:#0C0C0C;--noir2:#121212;--noir3:#1A1A1A;--noir4:#222;
+  --bord:rgba(255,255,255,.07);--bord2:rgba(255,255,255,.14);
+  --txt:#F0EEE8;--txt2:#888;--txt3:#444;
+  --rouge:#CC2B2B;--rouge-vif:#E03535;--rouge-pale:rgba(204,43,43,.12);
+  --amber:#D4920A;--amber-pale:rgba(212,146,10,.12);
+  --vert:#26A96C;--vert-pale:rgba(38,169,108,.12);
+  --mono:'JetBrains Mono',monospace;
+  --cond:'Barlow Condensed',sans-serif;
+  --body:'Barlow',sans-serif;
+}
+html,body{height:100%;background:var(--noir);color:var(--txt);font-family:var(--body)}
+
+/* Topbar */
+.topbar{height:48px;background:var(--noir2);border-bottom:1px solid var(--bord);
+  display:flex;align-items:center;padding:0 20px;gap:16px}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-sq{width:26px;height:26px;background:var(--rouge);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--cond);font-size:12px;font-weight:800;color:#fff}
+.logo-txt{font-family:var(--cond);font-size:14px;font-weight:800;letter-spacing:.04em}
+.back-btn{
+  margin-left:auto;padding:5px 12px;border-radius:4px;
+  border:1px solid var(--bord2);background:transparent;
+  color:var(--txt2);font-family:var(--mono);font-size:10px;cursor:pointer;
+  transition:all .15s;text-decoration:none;letter-spacing:.04em;
+}
+.back-btn:hover{color:var(--txt);border-color:var(--rouge)}
+
+/* Layout */
+.page{max-width:800px;margin:0 auto;padding:24px 20px}
+.page-title{font-family:var(--cond);font-size:28px;font-weight:800;
+  letter-spacing:.02em;margin-bottom:4px}
+.page-sub{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-bottom:24px}
+
+/* Quota du jour */
+.quota-bar{
+  background:var(--noir2);border:1px solid var(--bord);border-radius:10px;
+  padding:16px 20px;margin-bottom:20px;
+  display:flex;align-items:center;gap:16px;
+}
+.quota-label{font-family:var(--mono);font-size:10px;color:var(--txt3);
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.quota-slots{display:flex;gap:6px}
+.slot{
+  width:36px;height:36px;border-radius:6px;border:1px solid var(--bord2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:12px;
+}
+.slot.used{background:var(--rouge-pale);border-color:rgba(204,43,43,.35);color:var(--rouge)}
+.slot.free{background:var(--noir3);color:var(--txt3)}
+.quota-text{font-family:var(--mono);font-size:11px;color:var(--txt2)}
+.quota-reset{font-size:10px;color:var(--txt3);margin-top:3px}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:16px}
+.tab{
+  padding:6px 14px;border-radius:5px;border:1px solid var(--bord2);
+  background:transparent;color:var(--txt2);font-family:var(--mono);
+  font-size:10px;cursor:pointer;letter-spacing:.06em;transition:all .15s;
+}
+.tab:hover{color:var(--txt)}
+.tab.active{border-color:var(--rouge);background:var(--rouge-pale);color:var(--rouge)}
+
+/* Carte alerte */
+.alerte-card{
+  background:var(--noir2);border:1px solid var(--bord);border-radius:10px;
+  margin-bottom:8px;overflow:hidden;animation:fadeUp .2s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.ac-top{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.ac-score{
+  width:48px;height:48px;border-radius:8px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--rouge-pale);border:1px solid rgba(204,43,43,.25);
+}
+.ac-score-n{font-family:var(--cond);font-size:22px;font-weight:800;color:var(--rouge);line-height:1}
+.ac-score-l{font-family:var(--mono);font-size:8px;color:var(--txt3);letter-spacing:.05em}
+.ac-info{flex:1;min-width:0}
+.ac-titre{font-family:var(--cond);font-size:15px;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.ac-meta{font-family:var(--mono);font-size:10px;color:var(--txt2);
+  display:flex;gap:12px;flex-wrap:wrap}
+.ac-date{font-family:var(--mono);font-size:10px;color:var(--txt3);flex-shrink:0;text-align:right}
+
+/* Statut badge */
+.statut-badge{
+  display:inline-block;font-family:var(--mono);font-size:9px;
+  padding:2px 8px;border-radius:4px;letter-spacing:.05em;
+  margin-top:4px;
+}
+.sb-envoye{background:var(--amber-pale);color:var(--amber);border:1px solid rgba(212,146,10,.25)}
+.sb-contacte{background:var(--vert-pale);color:var(--vert);border:1px solid rgba(38,169,108,.25)}
+.sb-rdv{background:rgba(43,124,194,.12);color:#6BA4FF;border:1px solid rgba(43,124,194,.25)}
+.sb-mandat{background:var(--rouge-pale);color:var(--rouge);border:1px solid rgba(204,43,43,.25)}
+.sb-ignore{background:var(--noir4);color:var(--txt3);border:1px solid var(--bord)}
+
+/* Accordion détail */
+.ac-detail{display:none;border-top:1px solid var(--bord);padding:12px 16px}
+.ac-detail.open{display:block}
+.wf-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.wf-b{
+  padding:6px 12px;border-radius:5px;border:1px solid var(--bord2);
+  background:transparent;color:var(--txt2);font-family:var(--mono);
+  font-size:10px;cursor:pointer;transition:all .15s;letter-spacing:.04em;
+}
+.wf-b:hover{background:var(--noir4);color:var(--txt)}
+.wf-b.on{border-color:var(--vert);background:var(--vert-pale);color:var(--vert)}
+.wf-b.rouge{border-color:rgba(204,43,43,.4);color:var(--rouge)}
+.appetence-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.ap-item{background:var(--noir3);border-radius:6px;padding:8px;border:1px solid var(--bord);text-align:center}
+.ap-lbl{font-family:var(--mono);font-size:9px;color:var(--txt3);margin-bottom:3px;letter-spacing:.04em}
+.ap-val{font-family:var(--cond);font-size:18px;font-weight:800}
+
+.empty{text-align:center;padding:48px 0;color:var(--txt3);font-family:var(--mono);font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-sq">LF</div>
+    <span class="logo-txt">MES ALERTES</span>
+  </div>
+  <a href="index.html" class="back-btn">← TABLEAU DE BORD</a>
+</div>
+
+<div class="page">
+  <div class="page-title">MES ALERTES</div>
+  <div class="page-sub" id="page-sub">Chargement…</div>
+
+  <!-- Quota du jour -->
+  <div class="quota-bar">
+    <div>
+      <div class="quota-label">QUOTA AUJOURD'HUI</div>
+      <div class="quota-slots" id="quota-slots">
+        <div class="slot free">1</div>
+        <div class="slot free">2</div>
+        <div class="slot free">3</div>
+      </div>
+    </div>
+    <div>
+      <div class="quota-text" id="quota-text">0/3 alertes reçues aujourd'hui</div>
+      <div class="quota-reset">Reset à minuit · Max 3/jour par agent</div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--txt3)">RÉACTIVITÉ</div>
+      <div style="font-family:var(--cond);font-size:24px;font-weight:800;color:var(--vert)" id="reactivite-pct">—%</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--txt3)">taux de traitement</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('toutes',this)">TOUTES</button>
+    <button class="tab" onclick="setTab('envoye',this)">EN ATTENTE</button>
+    <button class="tab" onclick="setTab('contacte',this)">CONTACTÉES</button>
+    <button class="tab" onclick="setTab('mandat',this)">MANDATS 🎉</button>
+  </div>
+
+  <div id="liste-alertes"></div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getFirestore, collection, query, where, orderBy,
+         onSnapshot, doc, updateDoc }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDDqmNZuvK7iSWdwthxKah-49M_XWf_C6g",
+  authDomain:        "mandatscrap.firebaseapp.com",
+  projectId:         "mandatscrap",
+  storageBucket:     "mandatscrap.firebasestorage.app",
+  messagingSenderId: "709831585907",
+  appId:             "1:709831585907:web:e18de97394996b34543a06",
+  measurementId:     "G-RP6HY6KB7W",
+};
+
+const app  = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, user => {
+  if (!user) { window.location.href = "login.html"; return; }
+  window.AGENT_ID = user.uid;
+
+  const q = query(
+    collection(db, "alertes"),
+    where("agentId", "==", user.uid),
+    orderBy("envoyeeAt", "desc")
+  );
+
+  onSnapshot(q, snap => {
+    window.ALERTES = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    majAffichage();
+  });
+});
+
+window.mettreAJourStatut = async (alerteId, statut) => {
+  await updateDoc(doc(db, "alertes", alerteId), {
+    statut, updatedAt: new Date().toISOString()
+  });
+};
+</script>
+
+<script>
+window.ALERTES = [];
+window.TAB = "toutes";
+
+// Démo si Firebase pas encore connecté
+setTimeout(() => {
+  if (!window.ALERTES?.length) {
+    window.ALERTES = [
+      { id:"a1", bienTitre:"Maison 5p Haguenau", bienVille:"Haguenau", bienScore:91,
+        appetenceScore:78, appetenceDetail:{reactivite:28,disponibilite:20,proximite:25,anciennete:5},
+        statut:"envoye", envoyeeAt: new Date(Date.now()-3600000).toISOString() },
+      { id:"a2", bienTitre:"Appt T3 Strasbourg", bienVille:"Strasbourg", bienScore:78,
+        appetenceScore:65, appetenceDetail:{reactivite:17,disponibilite:30,proximite:15,anciennete:3},
+        statut:"contacte", envoyeeAt: new Date(Date.now()-86400000*2).toISOString() },
+      { id:"a3", bienTitre:"Villa 7p Haguenau", bienVille:"Haguenau", bienScore:88,
+        appetenceScore:82, appetenceDetail:{reactivite:35,disponibilite:20,proximite:25,anciennete:2},
+        statut:"mandat", envoyeeAt: new Date(Date.now()-86400000*5).toISOString() },
+    ];
+    majAffichage();
+  }
+}, 500);
+
+function setTab(t, btn) {
+  window.TAB = t;
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  majAffichage();
+}
+window.setTab = setTab;
+
+function majAffichage() {
+  const alertes = window.ALERTES;
+
+  // Quota du jour
+  const debut = new Date(); debut.setHours(0,0,0,0);
+  const aujourdhui = alertes.filter(a => new Date(a.envoyeeAt) >= debut);
+  const nbJour = aujourdhui.length;
+  const slots = document.getElementById("quota-slots");
+  if (slots) {
+    slots.innerHTML = [1,2,3].map(i =>
+      `<div class="slot ${i <= nbJour ? "used" : "free"}">${i <= nbJour ? "✓" : i}</div>`
+    ).join("");
+  }
+  const qt = document.getElementById("quota-text");
+  if (qt) qt.textContent = `${nbJour}/3 alertes reçues aujourd'hui${nbJour >= 3 ? " · QUOTA ATTEINT" : ""}`;
+
+  // Réactivité
+  const traitees = alertes.filter(a => ["contacte","rdv","mandat"].includes(a.statut)).length;
+  const pct = alertes.length > 0 ? Math.round((traitees / alertes.length) * 100) : 0;
+  const rEl = document.getElementById("reactivite-pct");
+  if (rEl) { rEl.textContent = pct + "%"; rEl.style.color = pct >= 60 ? "var(--vert)" : pct >= 30 ? "var(--amber)" : "var(--rouge)"; }
+
+  // Sous-titre
+  const sub = document.getElementById("page-sub");
+  if (sub) sub.textContent = `${alertes.length} alertes reçues au total · ${traitees} traitées`;
+
+  // Filtrer
+  let filtrees = alertes;
+  if (window.TAB !== "toutes") filtrees = alertes.filter(a => a.statut === window.TAB);
+
+  const liste = document.getElementById("liste-alertes");
+  if (!filtrees.length) {
+    liste.innerHTML = `<div class="empty">Aucune alerte dans cette catégorie</div>`;
+    return;
+  }
+
+  liste.innerHTML = filtrees.map((a, i) => {
+    const date = new Date(a.envoyeeAt);
+    const dateStr = date.toLocaleDateString("fr-FR",{day:"numeric",month:"short"}) + " " +
+                    date.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+    const statutCls = {
+      envoye:"sb-envoye", contacte:"sb-contacte", rdv:"sb-rdv",
+      mandat:"sb-mandat", ignore:"sb-ignore"
+    }[a.statut] || "sb-envoye";
+    const statutLbl = {
+      envoye:"EN ATTENTE", contacte:"CONTACTÉ", rdv:"RDV PRÉVU",
+      mandat:"MANDAT 🎉", ignore:"IGNORÉ"
+    }[a.statut] || "—";
+    const d = a.appetenceDetail || {};
+
+    return `
+    <div class="alerte-card" style="animation-delay:${i*.04}s">
+      <div class="ac-top" onclick="toggleDetail('${a.id}')">
+        <div class="ac-score">
+          <div class="ac-score-n">${a.bienScore||"?"}</div>
+          <div class="ac-score-l">SCORE</div>
+        </div>
+        <div class="ac-info">
+          <div class="ac-titre">${a.bienTitre||"—"}</div>
+          <div class="ac-meta">
+            <span>📍 ${a.bienVille||"?"}</span>
+            <span>Appétence ${a.appetenceScore||"?"}/100</span>
+          </div>
+          <span class="statut-badge ${statutCls}">${statutLbl}</span>
+        </div>
+        <div class="ac-date">${dateStr}<br><span style="color:var(--rouge);font-size:9px">▼ DÉTAIL</span></div>
+      </div>
+      <div class="ac-detail" id="detail-${a.id}">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--txt3);margin-bottom:8px;letter-spacing:.08em">SCORE D'APPÉTENCE — POURQUOI VOUS</div>
+        <div class="appetence-grid">
+          <div class="ap-item"><div class="ap-lbl">RÉACTIVITÉ</div><div class="ap-val" style="color:var(--vert)">${d.reactivite||0}</div><div style="font-size:9px;color:var(--txt3);font-family:var(--mono)">/35</div></div>
+          <div class="ap-item"><div class="ap-lbl">DISPO</div><div class="ap-val" style="color:var(--amber)">${d.disponibilite||0}</div><div style="font-size:9px;color:var(--txt3);font-family:var(--mono)">/30</div></div>
+          <div class="ap-item"><div class="ap-lbl">PROXIMITÉ</div><div class="ap-val" style="color:var(--rouge)">${d.proximite||0}</div><div style="font-size:9px;color:var(--txt3);font-family:var(--mono)">/25</div></div>
+          <div class="ap-item"><div class="ap-lbl">ANCIENNETÉ</div><div class="ap-val">${d.anciennete||0}</div><div style="font-size:9px;color:var(--txt3);font-family:var(--mono)">/10</div></div>
+        </div>
+        <div class="wf-row">
+          <button class="wf-b ${a.statut==="contacte"?"on":""}" onclick="maj('${a.id}','contacte')">📞 CONTACTÉ</button>
+          <button class="wf-b ${a.statut==="rdv"?"on":""}" onclick="maj('${a.id}','rdv')">📅 RDV PRÉVU</button>
+          <button class="wf-b ${a.statut==="mandat"?"on":""}" onclick="maj('${a.id}','mandat')">✅ MANDAT</button>
+          <button class="wf-b rouge ${a.statut==="ignore"?"on":""}" onclick="maj('${a.id}','ignore')">✕ IGNORER</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleDetail(id) {
+  const el = document.getElementById(`detail-${id}`);
+  if (el) el.classList.toggle("open");
+}
+window.toggleDetail = toggleDetail;
+
+async function maj(alerteId, statut) {
+  const alerte = window.ALERTES.find(a => a.id === alerteId);
+  if (alerte) alerte.statut = statut;
+  if (window.mettreAJourStatut) await window.mettreAJourStatut(alerteId, statut);
+  majAffichage();
+}
+window.maj = maj;
+</script>
+
+</body>
+</html>

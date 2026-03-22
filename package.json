@@ -1,0 +1,15 @@
+{
+  "name": "siana-lf-immo",
+  "version": "1.0.0",
+  "description": "Copilote IA relance mandats dormants — LF Immo",
+  "scripts": {
+    "start": "node scripts/recalcul-scores.js",
+    "recalcul": "node scripts/recalcul-scores.js",
+    "import": "node scripts/import-csv.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "papaparse": "^5.4.1",
+    "dotenv": "^16.0.0"
+  }
+}

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MandatScrap — Créer un compte</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --noir:#0C0C0C;--noir2:#121212;--noir3:#1A1A1A;--noir4:#222;
+  --bord:rgba(255,255,255,.07);--bord2:rgba(255,255,255,.14);
+  --txt:#F0EEE8;--txt2:#888;--txt3:#444;
+  --rouge:#CC2B2B;--rouge-vif:#E03535;--rouge-pale:rgba(204,43,43,.12);
+  --vert:#26A96C;--vert-pale:rgba(38,169,108,.12);
+  --mono:'JetBrains Mono',monospace;
+  --cond:'Barlow Condensed',sans-serif;
+  --body:'Barlow',sans-serif;
+}
+html,body{min-height:100%;background:var(--noir);color:var(--txt);font-family:var(--body);
+  display:flex;align-items:flex-start;justify-content:center;padding:30px 16px}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(var(--bord) 1px,transparent 1px),linear-gradient(90deg,var(--bord) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none}
+
+.card{background:var(--noir2);border:1px solid var(--bord2);border-radius:14px;
+  padding:36px;width:100%;max-width:460px;position:relative;z-index:1;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.logo-sq{width:32px;height:32px;background:var(--rouge);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--cond);font-size:14px;font-weight:800;color:#fff}
+.logo-txt{font-family:var(--cond);font-size:18px;font-weight:800;letter-spacing:.04em}
+
+h1{font-family:var(--cond);font-size:24px;font-weight:800;letter-spacing:.02em;margin-bottom:4px}
+.subtitle{font-size:13px;color:var(--txt2);margin-bottom:24px}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:420px){.form-row{grid-template-columns:1fr}}
+
+.form-group{margin-bottom:14px}
+label{display:block;font-family:var(--mono);font-size:10px;color:var(--txt2);
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+input,select{
+  width:100%;padding:10px 13px;border-radius:7px;
+  background:var(--noir3);border:1px solid var(--bord2);
+  color:var(--txt);font-family:var(--body);font-size:14px;outline:none;
+  transition:border-color .15s;
+}
+input:focus,select:focus{border-color:var(--rouge)}
+input::placeholder{color:var(--txt3)}
+select option{background:var(--noir3)}
+
+.section-title{
+  font-family:var(--mono);font-size:10px;color:var(--txt3);
+  letter-spacing:.1em;text-transform:uppercase;
+  margin:20px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--bord);
+}
+
+/* Zones checkboxes */
+.zones-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+.zone-check{
+  display:flex;align-items:center;gap:6px;padding:6px 8px;
+  background:var(--noir3);border:1px solid var(--bord);border-radius:6px;cursor:pointer;
+  transition:all .15s;font-size:12px;font-family:var(--mono);color:var(--txt2);
+}
+.zone-check:hover{border-color:var(--bord2);color:var(--txt)}
+.zone-check.selected{border-color:var(--rouge);background:var(--rouge-pale);color:var(--rouge)}
+.zone-check input{display:none}
+
+.reseau-tabs{display:flex;gap:6px;margin-top:4px}
+.rt{
+  flex:1;padding:8px;border-radius:6px;border:1px solid var(--bord2);
+  background:transparent;color:var(--txt2);font-family:var(--mono);
+  font-size:11px;cursor:pointer;text-align:center;transition:all .15s;
+}
+.rt:hover{background:var(--noir3);color:var(--txt)}
+.rt.active{border-color:var(--rouge);background:var(--rouge-pale);color:var(--rouge)}
+
+.btn-register{
+  width:100%;padding:12px;border-radius:7px;margin-top:12px;
+  background:var(--rouge);border:none;color:#fff;
+  font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.06em;
+  cursor:pointer;transition:background .15s;
+}
+.btn-register:hover{background:var(--rouge-vif)}
+.btn-register:disabled{background:var(--noir4);color:var(--txt3);cursor:not-allowed}
+
+.error-msg{background:var(--rouge-pale);border:1px solid rgba(204,43,43,.3);
+  border-radius:6px;padding:10px 12px;font-size:12px;color:#FF8A8A;
+  margin-top:12px;display:none;font-family:var(--mono)}
+.error-msg.visible{display:block}
+
+.success-msg{background:var(--vert-pale);border:1px solid rgba(38,169,108,.3);
+  border-radius:6px;padding:12px;font-size:13px;color:var(--vert);
+  margin-top:12px;display:none;text-align:center;line-height:1.6}
+.success-msg.visible{display:block}
+
+.footer-link{text-align:center;margin-top:20px;font-size:12px;color:var(--txt3);font-family:var(--mono)}
+.footer-link a{color:var(--rouge);text-decoration:none}
+
+.code-field{position:relative}
+.code-hint{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  font-family:var(--mono);font-size:10px;color:var(--txt3)}
+
+.loading-spinner{display:inline-block;width:14px;height:14px;
+  border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+  border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-sq">LF</div>
+    <span class="logo-txt">COMMAND</span>
+  </div>
+
+  <h1>CRÉER UN COMPTE</h1>
+  <div class="subtitle">Renseignez vos informations pour accéder à l'outil</div>
+
+  <!-- Identité -->
+  <div class="form-row">
+    <div class="form-group">
+      <label>Prénom</label>
+      <input type="text" id="prenom" placeholder="Thomas" autocomplete="given-name">
+    </div>
+    <div class="form-group">
+      <label>Nom</label>
+      <input type="text" id="nom" placeholder="Dupont" autocomplete="family-name">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Email professionnel</label>
+    <input type="email" id="email" placeholder="thomas.dupont@lafede.immo" autocomplete="email">
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="password" placeholder="8 caractères min." autocomplete="new-password">
+    </div>
+    <div class="form-group">
+      <label>Confirmer</label>
+      <input type="password" id="password2" placeholder="••••••••" autocomplete="new-password">
+    </div>
+  </div>
+
+  <!-- Réseau -->
+  <div class="section-title">RÉSEAU</div>
+  <div class="reseau-tabs" id="reseau-tabs">
+    <button class="rt active" onclick="setReseau('lf_immo',this)">LF Immo</button>
+    <button class="rt" onclick="setReseau('lmd',this)">LMD Immobilier</button>
+    <button class="rt" onclick="setReseau('les_deux',this)">Les deux</button>
+  </div>
+  <input type="hidden" id="reseau" value="lf_immo">
+
+  <!-- Code d'accès -->
+  <div class="section-title">CODE D'ACCÈS RÉSEAU</div>
+  <div class="form-group code-field">
+    <label>Code fourni par votre responsable</label>
+    <input type="text" id="code-acces" placeholder="Ex: LF2026" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+    <span class="code-hint">Obligatoire</span>
+  </div>
+
+  <!-- Zones -->
+  <div class="section-title">ZONES DE PROSPECTION (Codes postaux)</div>
+  <div class="form-group">
+    <label>Zones prédéfinies Alsace</label>
+    <div class="zones-grid" id="zones-grid">
+      <!-- Rempli par JS -->
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Autres codes postaux (séparés par virgule)</label>
+    <input type="text" id="autres-cp" placeholder="67150, 67170, 67400...">
+  </div>
+
+  <button class="btn-register" id="btn-register" onclick="inscrire()">
+    CRÉER MON COMPTE
+  </button>
+
+  <div class="error-msg" id="error-msg"></div>
+  <div class="success-msg" id="success-msg">
+    ✓ Compte créé avec succès !<br>
+    <span style="font-size:12px;opacity:.8">Redirection dans quelques secondes…</span>
+  </div>
+
+  <div class="footer-link">
+    Déjà un compte ? <a href="login.html">Se connecter</a>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDDqmNZuvK7iSWdwthxKah-49M_XWf_C6g",
+  authDomain:        "mandatscrap.firebaseapp.com",
+  projectId:         "mandatscrap",
+  storageBucket:     "mandatscrap.firebasestorage.app",
+  messagingSenderId: "709831585907",
+  appId:             "1:709831585907:web:e18de97394996b34543a06",
+  measurementId:     "G-RP6HY6KB7W",
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// Codes d'accès valides — à changer régulièrement
+// En V2 : stocker dans Firestore et gérer depuis l'admin
+const CODES_VALIDES = {
+  "MSINVITE2026":  { reseau: "lf_immo",  role: "agent" },
+  "LMDINVITE2026": { reseau: "lmd",      role: "agent" },
+  "MSADMIN2026":  { reseau: "all",      role: "admin" },
+};
+
+// Si déjà connecté → rediriger
+onAuthStateChanged(auth, user => {
+  if (user) window.location.href = "index.html";
+});
+
+window.inscrire = async function() {
+  const prenom   = document.getElementById("prenom").value.trim();
+  const nom      = document.getElementById("nom").value.trim();
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const password2 = document.getElementById("password2").value;
+  const reseau   = document.getElementById("reseau").value;
+  const code     = document.getElementById("code-acces").value.trim().toUpperCase();
+  const autresCP = document.getElementById("autres-cp").value
+    .split(",").map(s => s.trim()).filter(Boolean);
+  const zonesSelectees = [...document.querySelectorAll(".zone-check.selected")]
+    .map(el => el.dataset.cp);
+  const tousCP = [...new Set([...zonesSelectees, ...autresCP])];
+
+  const btn = document.getElementById("btn-register");
+  const err = document.getElementById("error-msg");
+
+  // Validations
+  if (!prenom || !nom) return afficherErreur("Prénom et nom requis");
+  if (!email) return afficherErreur("Email requis");
+  if (password.length < 8) return afficherErreur("Mot de passe : 8 caractères minimum");
+  if (password !== password2) return afficherErreur("Les mots de passe ne correspondent pas");
+  if (!code) return afficherErreur("Code d'accès requis — demandez-le à votre responsable");
+  if (!CODES_VALIDES[code]) return afficherErreur("Code d'accès invalide");
+  if (tousCP.length === 0) return afficherErreur("Sélectionnez au moins une zone de prospection");
+
+  const codeInfo = CODES_VALIDES[code];
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span>';
+  err.classList.remove("visible");
+
+  try {
+    // 1. Créer le compte Firebase Auth
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const user = cred.user;
+
+    // 2. Mettre à jour le displayName
+    await updateProfile(user, { displayName: `${prenom} ${nom}` });
+
+    // 3. Créer le profil agent dans Firestore
+    await setDoc(doc(db, "agents", user.uid), {
+      uid:       user.uid,
+      prenom,
+      nom,
+      email,
+      reseau:    codeInfo.reseau !== "all" ? codeInfo.reseau : reseau,
+      role:      codeInfo.role,
+      zones:     tousCP,         // Codes postaux à surveiller
+      statut:    "actif",
+      codeInvit: code,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // 4. Succès
+    document.getElementById("success-msg").classList.add("visible");
+    btn.textContent = "✓ COMPTE CRÉÉ";
+    setTimeout(() => window.location.href = "index.html", 2000);
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = "CRÉER MON COMPTE";
+    const messages = {
+      "auth/email-already-in-use": "Cet email est déjà utilisé — connectez-vous",
+      "auth/invalid-email":        "Email invalide",
+      "auth/weak-password":        "Mot de passe trop faible",
+    };
+    afficherErreur(messages[e.code] || `Erreur : ${e.message}`);
+  }
+};
+
+function afficherErreur(msg) {
+  const err = document.getElementById("error-msg");
+  err.textContent = msg;
+  err.classList.add("visible");
+}
+</script>
+
+<script>
+// Zones Alsace prédéfinies
+const ZONES_ALSACE = [
+  { cp: "67000", lbl: "Strasbourg" },
+  { cp: "67100", lbl: "Strasbourg S." },
+  { cp: "67200", lbl: "Strasbourg N." },
+  { cp: "67300", lbl: "Schiltigheim" },
+  { cp: "67400", lbl: "Illkirch" },
+  { cp: "67500", lbl: "Haguenau" },
+  { cp: "67240", lbl: "Bischwiller" },
+  { cp: "67160", lbl: "Wissembourg" },
+  { cp: "67700", lbl: "Saverne" },
+  { cp: "67120", lbl: "Molsheim" },
+  { cp: "67600", lbl: "Sélestat" },
+  { cp: "67170", lbl: "Brumath" },
+  { cp: "68000", lbl: "Colmar" },
+  { cp: "68100", lbl: "Mulhouse" },
+  { cp: "68200", lbl: "Mulhouse S." },
+];
+
+// Remplir la grille des zones
+const grid = document.getElementById("zones-grid");
+ZONES_ALSACE.forEach(z => {
+  const el = document.createElement("div");
+  el.className = "zone-check";
+  el.dataset.cp = z.cp;
+  el.innerHTML = `<input type="checkbox" value="${z.cp}">
+    <span>${z.cp}<br><span style="font-size:9px;opacity:.7">${z.lbl}</span></span>`;
+  el.onclick = () => el.classList.toggle("selected");
+  grid.appendChild(el);
+});
+
+// Toggle réseau
+window.setReseau = function(val, btn) {
+  document.getElementById("reseau").value = val;
+  document.querySelectorAll(".rt").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MandatScrap — Tableau de Bord Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --noir:#F5F4F1; --noir2:#FFFFFF; --noir3:#ECEAE5; --noir4:#E0DDD8;
+  --bord:rgba(0,0,0,.08); --bord2:rgba(0,0,0,.15);
+  --txt:#1A1A1A; --txt2:#666; --txt3:#999;
+  --rouge:#CC2B2B; --rouge-vif:#E03535; --rouge-pale:rgba(204,43,43,.12);
+  --amber:#D4920A; --amber-pale:rgba(212,146,10,.12);
+  --vert:#26A96C; --vert-pale:rgba(38,169,108,.12);
+  --bleu:#2B7CC2; --bleu-pale:rgba(43,124,194,.12);
+  --mono:'JetBrains Mono',monospace;
+  --cond:'Barlow Condensed',sans-serif;
+  --body:'Barlow',sans-serif;
+}
+
+html,body{height:100%;background:var(--noir);color:var(--txt);font-family:var(--body);font-size:14px;overflow:hidden}
+
+/* ── TOPBAR ──────────────────────────────────────────────────────────────── */
+.topbar{
+  height:52px;background:var(--noir2);border-bottom:1px solid var(--bord);
+  display:flex;align-items:center;padding:0 20px;gap:20px;flex-shrink:0;
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-sq{
+  width:28px;height:28px;background:var(--rouge);border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--cond);font-size:13px;font-weight:800;color:#fff;letter-spacing:-.02em;
+}
+.logo-txt{font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.04em;color:var(--txt)}
+.logo-sub{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-left:2px}
+.topbar-sep{width:1px;height:20px;background:var(--bord)}
+.topbar-date{font-family:var(--mono);font-size:11px;color:var(--txt2)}
+.topbar-tabs{display:flex;gap:2px;margin-left:auto}
+.ttab{
+  padding:6px 14px;border-radius:5px;cursor:pointer;
+  font-family:var(--cond);font-size:13px;font-weight:600;letter-spacing:.04em;
+  color:var(--txt2);border:none;background:transparent;
+  transition:all .15s;
+}
+.ttab:hover{color:var(--txt);background:var(--noir4)}
+.ttab.active{background:var(--rouge-pale);color:var(--rouge)}
+.topbar-agent{display:flex;align-items:center;gap:8px;margin-left:12px}
+.ta-av{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--rouge-pale);border:1px solid var(--rouge);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--cond);font-size:12px;font-weight:700;color:var(--rouge);
+}
+.ta-nm{font-size:12px;font-weight:600;color:var(--txt)}
+
+/* ── LAYOUT PRINCIPAL ────────────────────────────────────────────────────── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.body{flex:1;display:flex;overflow:hidden}
+
+/* ── PANEL MISSION ───────────────────────────────────────────────────────── */
+.mission-panel{
+  width:300px;flex-shrink:0;
+  background:var(--noir2);border-right:1px solid var(--bord);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.mp-header{
+  padding:16px 18px 12px;border-bottom:1px solid var(--bord);
+}
+.mp-day{
+  font-family:var(--mono);font-size:9px;color:var(--txt3);
+  letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;
+}
+.mp-title{
+  font-family:var(--cond);font-size:20px;font-weight:800;
+  letter-spacing:.02em;line-height:1.1;
+}
+.mp-title span{color:var(--rouge)}
+.mp-body{flex:1;overflow-y:auto;padding:14px 18px}
+.mp-body::-webkit-scrollbar{width:3px}
+.mp-body::-webkit-scrollbar-thumb{background:var(--noir4)}
+
+/* Score global du jour */
+.jour-score{
+  background:var(--noir3);border:1px solid var(--bord);border-radius:10px;
+  padding:14px;margin-bottom:16px;
+}
+.js-label{font-family:var(--mono);font-size:9px;color:var(--txt3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.js-row{display:flex;align-items:center;gap:10px}
+.js-num{font-family:var(--cond);font-size:36px;font-weight:800;color:var(--rouge);line-height:1}
+.js-bars{flex:1;display:flex;flex-direction:column;gap:5px}
+.js-bar-wrap{display:flex;align-items:center;gap:6px}
+.js-bar-lbl{font-family:var(--mono);font-size:9px;color:var(--txt3);width:52px;flex-shrink:0}
+.js-bar-track{flex:1;height:4px;background:var(--bord2);border-radius:2px;overflow:hidden}
+.js-bar-fill{height:100%;border-radius:2px}
+.js-bar-val{font-family:var(--mono);font-size:9px;color:var(--txt2);min-width:20px;text-align:right}
+
+/* Sections mission */
+.ms-label{
+  font-family:var(--mono);font-size:9px;color:var(--txt3);
+  letter-spacing:.12em;text-transform:uppercase;
+  margin-bottom:8px;margin-top:4px;
+  display:flex;align-items:center;gap:6px;
+}
+.ms-label::after{content:'';flex:1;height:1px;background:var(--bord)}
+
+/* Action card */
+.action-card{
+  background:var(--noir3);border:1px solid var(--bord);border-radius:8px;
+  margin-bottom:8px;overflow:hidden;cursor:pointer;
+  transition:border-color .15s,transform .1s;
+}
+.action-card:hover{border-color:var(--bord2);transform:translateY(-1px)}
+.action-card.rouge{border-left:2px solid var(--rouge)}
+.action-card.amber{border-left:2px solid var(--amber)}
+.action-card.vert{border-left:2px solid var(--vert)}
+.ac-top{display:flex;align-items:flex-start;gap:8px;padding:10px 12px 6px}
+.ac-num{
+  font-family:var(--cond);font-size:18px;font-weight:800;
+  color:var(--txt3);line-height:1;flex-shrink:0;width:20px;
+}
+.ac-content{flex:1;min-width:0}
+.ac-type{
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:3px;
+}
+.ac-type.rouge{color:var(--rouge)}
+.ac-type.amber{color:var(--amber)}
+.ac-nom{font-family:var(--cond);font-size:14px;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-sub{font-family:var(--mono);font-size:10px;color:var(--txt2);margin-top:2px}
+.ac-score{
+  font-family:var(--cond);font-size:20px;font-weight:800;flex-shrink:0;
+}
+.ac-score.rouge{color:var(--rouge)}
+.ac-score.amber{color:var(--amber)}
+.ac-bottom{padding:0 12px 10px;display:flex;gap:5px}
+.ac-tag{
+  font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;
+  background:var(--noir4);color:var(--txt3);border:1px solid var(--bord);
+}
+.ac-tag.hot{background:var(--rouge-pale);color:var(--rouge);border-color:rgba(204,43,43,.25)}
+.ac-tag.warn{background:var(--amber-pale);color:var(--amber);border-color:rgba(212,146,10,.25)}
+
+/* Bouton générer brief */
+.btn-brief{
+  width:100%;padding:10px;border-radius:8px;
+  background:var(--rouge);border:none;color:#fff;
+  font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:.05em;
+  cursor:pointer;margin-top:8px;transition:background .15s;
+}
+.btn-brief:hover{background:var(--rouge-vif)}
+.btn-brief:disabled{background:var(--noir4);color:var(--txt3);cursor:not-allowed}
+.brief-out{
+  margin-top:10px;background:var(--noir3);border:1px solid var(--bord);
+  border-radius:8px;padding:12px;font-size:12px;color:var(--txt2);
+  line-height:1.7;font-family:var(--mono);white-space:pre-wrap;
+  display:none;max-height:200px;overflow-y:auto;
+}
+.brief-out.visible{display:block}
+.brief-out::-webkit-scrollbar{width:3px}
+
+/* ── CONTENU CENTRAL ─────────────────────────────────────────────────────── */
+.center{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Barre de filtres */
+.center-bar{
+  height:44px;background:var(--noir2);border-bottom:1px solid var(--bord);
+  display:flex;align-items:center;padding:0 18px;gap:8px;flex-shrink:0;
+}
+.cb-title{
+  font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:.05em;
+  color:var(--txt);margin-right:8px;
+}
+.cb-chip{
+  padding:4px 10px;border-radius:4px;border:1px solid var(--bord2);
+  background:transparent;color:var(--txt2);font-family:var(--mono);
+  font-size:10px;cursor:pointer;transition:all .15s;letter-spacing:.04em;
+}
+.cb-chip:hover{border-color:var(--rouge);color:var(--txt)}
+.cb-chip.active{border-color:var(--rouge);background:var(--rouge-pale);color:var(--rouge)}
+.cb-sep{width:1px;height:16px;background:var(--bord)}
+.cb-search{
+  padding:4px 10px;border-radius:4px;border:1px solid var(--bord);
+  background:var(--noir3);color:var(--txt);font-family:var(--mono);
+  font-size:11px;outline:none;width:160px;
+}
+.cb-search:focus{border-color:var(--rouge)}
+.cb-search::placeholder{color:var(--txt3)}
+.cb-count{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--txt3)}
+
+/* Liste items */
+.list-area{flex:1;overflow-y:auto;padding:12px 18px}
+.list-area::-webkit-scrollbar{width:4px}
+.list-area::-webkit-scrollbar-thumb{background:var(--noir4);border-radius:2px}
+
+/* Item unifié */
+.item{
+  background:var(--noir2);border:1px solid var(--bord);border-radius:8px;
+  margin-bottom:6px;cursor:pointer;
+  display:flex;align-items:center;gap:0;overflow:hidden;
+  transition:border-color .15s,transform .08s;
+  animation:fadeUp .2s ease both;
+}
+.item:hover{border-color:var(--bord2);transform:translateX(2px)}
+.item.selected{border-color:var(--rouge);background:var(--noir3)}
+.item-stripe{width:3px;flex-shrink:0;align-self:stretch}
+.is-rouge{background:var(--rouge)}
+.is-amber{background:var(--amber)}
+.is-vert{background:var(--vert)}
+.is-bleu{background:var(--bleu)}
+.is-gris{background:var(--txt3)}
+
+.item-score{
+  width:52px;flex-shrink:0;text-align:center;padding:10px 6px;
+  border-right:1px solid var(--bord);
+}
+.is-num{font-family:var(--cond);font-size:20px;font-weight:800;line-height:1}
+.is-num.rouge{color:var(--rouge)}
+.is-num.amber{color:var(--amber)}
+.is-num.vert{color:var(--vert)}
+.is-num.gris{color:var(--txt3)}
+.is-lbl{font-family:var(--mono);font-size:8px;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase}
+
+.item-badge{
+  width:28px;flex-shrink:0;text-align:center;padding:10px 4px;
+  font-size:13px;
+}
+
+.item-body{flex:1;padding:10px 12px;min-width:0}
+.ib-top{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.ib-nom{font-family:var(--cond);font-size:15px;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib-type-tag{
+  font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;
+  flex-shrink:0;
+}
+.tag-pige{background:var(--rouge-pale);color:var(--rouge);border:1px solid rgba(204,43,43,.2)}
+.tag-contact{background:var(--amber-pale);color:var(--amber);border:1px solid rgba(212,146,10,.2)}
+.ib-sub{font-family:var(--mono);font-size:10px;color:var(--txt2);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ib-sigs{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
+.sig{
+  font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px;
+  background:var(--noir4);color:var(--txt3);border:1px solid var(--bord);
+}
+.sig.r{background:var(--rouge-pale);color:var(--rouge)}
+.sig.a{background:var(--amber-pale);color:var(--amber)}
+.sig.v{background:var(--vert-pale);color:var(--vert)}
+
+.item-right{padding:10px 14px 10px 6px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.ir-prix{font-family:var(--cond);font-size:14px;font-weight:700;white-space:nowrap}
+.ir-sub{font-family:var(--mono);font-size:9px;color:var(--txt3);text-align:right}
+.btn-act{
+  padding:5px 10px;border-radius:4px;background:var(--rouge);border:none;
+  color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;
+  cursor:pointer;white-space:nowrap;transition:background .15s;letter-spacing:.03em;
+}
+.btn-act:hover{background:var(--rouge-vif)}
+.btn-act.amber{background:var(--amber)}
+
+/* ── PANEL DROIT — DETAIL + PITCH ────────────────────────────────────────── */
+.right-panel{
+  width:360px;flex-shrink:0;background:var(--noir2);
+  border-left:1px solid var(--bord);
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateX(360px);transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.right-panel.open{transform:translateX(0)}
+
+.rp-header{
+  padding:14px 16px;border-bottom:1px solid var(--bord);flex-shrink:0;
+  display:flex;align-items:center;gap:10px;
+}
+.rp-av{
+  width:36px;height:36px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--cond);font-size:16px;font-weight:800;
+}
+.rp-av.rouge{background:var(--rouge-pale);color:var(--rouge)}
+.rp-av.amber{background:var(--amber-pale);color:var(--amber)}
+.rp-info{flex:1;min-width:0}
+.rp-nom{font-family:var(--cond);font-size:16px;font-weight:800;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-sub{font-family:var(--mono);font-size:10px;color:var(--txt2)}
+.rp-score{font-family:var(--cond);font-size:24px;font-weight:800;flex-shrink:0}
+.rp-score.rouge{color:var(--rouge)}
+.rp-score.amber{color:var(--amber)}
+.btn-x{
+  width:26px;height:26px;border-radius:4px;border:1px solid var(--bord2);
+  background:transparent;color:var(--txt2);cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.btn-x:hover{background:var(--noir4);color:var(--txt)}
+
+.rp-body{flex:1;overflow-y:auto;padding:14px 16px}
+.rp-body::-webkit-scrollbar{width:3px}
+.rp-body::-webkit-scrollbar-thumb{background:var(--noir4)}
+
+/* Breakdown score */
+.breakdown{
+  background:var(--noir3);border:1px solid var(--bord);border-radius:8px;
+  padding:12px;margin-bottom:12px;
+}
+.bd-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bd-lbl{font-family:var(--mono);font-size:9px;color:var(--txt3);width:80px;flex-shrink:0;letter-spacing:.05em}
+.bd-bar{flex:1;height:3px;background:var(--bord2);border-radius:2px;overflow:hidden}
+.bd-fill{height:100%;border-radius:2px}
+.bd-val{font-family:var(--mono);font-size:9px;color:var(--txt2);width:28px;text-align:right}
+
+/* Infos grid */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px}
+.ig-item{background:var(--noir3);border:1px solid var(--bord);border-radius:6px;padding:8px 9px}
+.ig-lbl{font-family:var(--mono);font-size:9px;color:var(--txt3);margin-bottom:2px;letter-spacing:.05em}
+.ig-val{font-size:12px;font-weight:600;color:var(--txt)}
+
+/* Workflow */
+.wf-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.wf-b{
+  padding:6px 10px;border-radius:4px;border:1px solid var(--bord2);
+  background:transparent;color:var(--txt2);font-family:var(--mono);
+  font-size:10px;cursor:pointer;transition:all .15s;
+}
+.wf-b:hover{background:var(--noir4);color:var(--txt)}
+.wf-b.on{border-color:var(--vert);background:var(--vert-pale);color:var(--vert)}
+
+/* Section label */
+.sec-lbl{
+  font-family:var(--mono);font-size:9px;color:var(--txt3);
+  letter-spacing:.12em;text-transform:uppercase;
+  margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--bord);
+}
+
+/* ── PITCH ZONE ──────────────────────────────────────────────────────────── */
+.pitch-zone{
+  flex-shrink:0;border-top:1px solid var(--bord);padding:12px 16px;
+  background:var(--noir3);
+}
+.pz-ctrls{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.pc{
+  padding:4px 9px;border-radius:4px;border:1px solid var(--bord);
+  background:transparent;color:var(--txt3);font-family:var(--mono);
+  font-size:9px;cursor:pointer;transition:all .15s;letter-spacing:.04em;
+}
+.pc:hover{color:var(--txt);border-color:var(--bord2)}
+.pc.active{border-color:var(--rouge);background:var(--rouge-pale);color:var(--rouge)}
+.pz-out{
+  background:var(--noir2);border:1px solid var(--bord);border-radius:6px;
+  padding:10px;font-family:var(--mono);font-size:11px;color:var(--txt2);
+  line-height:1.7;min-height:80px;max-height:160px;overflow-y:auto;
+  white-space:pre-wrap;
+}
+.pz-out::-webkit-scrollbar{width:3px}
+.pz-out.empty{color:var(--txt3);font-style:italic;display:flex;align-items:center;justify-content:center;font-size:10px}
+.pz-out.loading{color:var(--txt3);font-style:italic}
+.pz-foot{display:flex;gap:6px;margin-top:8px}
+.btn-gen{
+  flex:1;padding:8px;border-radius:5px;background:var(--rouge);border:none;
+  color:#fff;font-family:var(--cond);font-size:13px;font-weight:700;
+  letter-spacing:.05em;cursor:pointer;transition:background .15s;
+}
+.btn-gen:hover{background:var(--rouge-vif)}
+.btn-gen:disabled{background:var(--noir4);color:var(--txt3);cursor:not-allowed}
+.btn-cp{
+  padding:8px 12px;border-radius:5px;border:1px solid var(--bord2);
+  background:transparent;color:var(--txt2);font-family:var(--mono);font-size:10px;
+  cursor:pointer;transition:all .15s;
+}
+.btn-cp:hover{border-color:var(--vert);color:var(--vert)}
+.btn-cp.ok{border-color:var(--vert);color:var(--vert);background:var(--vert-pale)}
+
+/* ── ANIMATIONS ──────────────────────────────────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pulsing{animation:pulse 1s ease infinite}
+
+/* ── VUE STATS ───────────────────────────────────────────────────────────── */
+.stats-view{display:none;flex:1;overflow-y:auto;padding:20px 24px}
+.stats-view.active{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--noir2);border:1px solid var(--bord);border-radius:10px;padding:16px}
+.stat-card-lbl{font-family:var(--mono);font-size:9px;color:var(--txt3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.stat-card-num{font-family:var(--cond);font-size:32px;font-weight:800;line-height:1}
+.stat-card-num.rouge{color:var(--rouge)}
+.stat-card-num.amber{color:var(--amber)}
+.stat-card-num.vert{color:var(--vert)}
+.stat-card-sub{font-family:var(--mono);font-size:10px;color:var(--txt2);margin-top:4px}
+
+.list-view{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.list-view.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── TOPBAR ───────────────────────────────────────────────────────────── -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-sq">LF</div>
+      <span class="logo-txt">COMMAND</span>
+      <span class="logo-sub">v1.0</span>
+    </div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-date" id="tb-date">—</div>
+    <div class="topbar-tabs">
+      <button class="ttab active" onclick="setVue('terrain',this)">TERRAIN</button>
+      <button class="ttab" onclick="setVue('stats',this)">STATS</button>
+    </div>
+    <div class="topbar-agent">
+      <div class="ta-av" id="ta-av">Q</div>
+      <span class="ta-nm" id="ta-nm">Agent LF Immo</span>
+    </div>
+  </div>
+
+  <!-- ── BODY ─────────────────────────────────────────────────────────────── -->
+  <div class="body">
+
+    <!-- ── PANEL MISSION ─────────────────────────────────────────────────── -->
+    <div class="mission-panel">
+      <div class="mp-header">
+        <div class="mp-day" id="mp-day">LUNDI 21 MARS 2026</div>
+        <div class="mp-title">MISSION<br>DU <span>JOUR</span></div>
+      </div>
+      <div class="mp-body">
+
+        <!-- Score global -->
+        <div class="jour-score">
+          <div class="js-label">POTENTIEL JOURNÉE</div>
+          <div class="js-row">
+            <div class="js-num" id="js-num">—</div>
+            <div class="js-bars">
+              <div class="js-bar-wrap">
+                <div class="js-bar-lbl">MANDATS</div>
+                <div class="js-bar-track"><div class="js-bar-fill" id="bar-pige" style="background:var(--rouge);width:0%"></div></div>
+                <div class="js-bar-val" id="val-pige">0</div>
+              </div>
+              <div class="js-bar-wrap">
+                <div class="js-bar-lbl">CONTACTS</div>
+                <div class="js-bar-track"><div class="js-bar-fill" id="bar-cont" style="background:var(--amber);width:0%"></div></div>
+                <div class="js-bar-val" id="val-cont">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top actions -->
+        <div class="ms-label">TOP PRIORITÉS</div>
+        <div id="top-actions">
+          <div style="text-align:center;padding:20px 0;color:var(--txt3);font-family:var(--mono);font-size:11px">Chargement...</div>
+        </div>
+
+        <!-- Brief IA -->
+        <div class="ms-label" style="margin-top:12px">BRIEF STRATÉGIQUE IA</div>
+        <button class="btn-brief" id="btn-brief" onclick="genererBrief()">
+          ✦ GÉNÉRER MON BRIEF DU JOUR
+        </button>
+        <div class="brief-out" id="brief-out"></div>
+
+      </div>
+    </div>
+
+    <!-- ── CENTRE ──────────────────────────────────────────────────────────── -->
+    <div class="center">
+
+      <!-- Barre -->
+      <div class="center-bar">
+        <span class="cb-title" id="cb-title">TOUS LES OBJECTIFS</span>
+        <button class="cb-chip active" onclick="setFiltre('tous',this)">TOUT</button>
+        <button class="cb-chip" onclick="setFiltre('pige',this)">MANDATS À RÉCUP.</button>
+        <button class="cb-chip" onclick="setFiltre('contact',this)">CONTACTS</button>
+        <button class="cb-chip" onclick="setFiltre('chaud',this)">🔥 CHAUDS</button>
+        <div class="cb-sep"></div>
+        <input class="cb-search" type="text" placeholder="Rechercher..." id="cb-search" oninput="appliquer()">
+        <span class="cb-count" id="cb-count">— items</span>
+      </div>
+
+      <!-- Vue terrain -->
+      <div class="list-view" id="list-view">
+        <div class="list-area" id="liste"></div>
+      </div>
+
+      <!-- Vue stats -->
+      <div class="stats-view" id="stats-view">
+        <div class="stats-grid" id="stats-grid"></div>
+      </div>
+
+    </div>
+
+    <!-- ── PANEL DROIT ─────────────────────────────────────────────────────── -->
+    <div class="right-panel" id="rp">
+      <div class="rp-header">
+        <div class="rp-av rouge" id="rp-av">—</div>
+        <div class="rp-info">
+          <div class="rp-nom" id="rp-nom">—</div>
+          <div class="rp-sub" id="rp-sub">—</div>
+        </div>
+        <div class="rp-score rouge" id="rp-score">—</div>
+        <button class="btn-x" onclick="fermer()">×</button>
+      </div>
+      <div class="rp-body" id="rp-body"></div>
+      <div class="pitch-zone">
+        <div class="pz-ctrls" id="pz-ctrls">
+          <button class="pc active" onclick="setPF('sms',this)">SMS</button>
+          <button class="pc" onclick="setPF('email',this)">EMAIL</button>
+          <button class="pc" onclick="setPF('appel',this)">APPEL</button>
+          <div style="width:1px;height:14px;background:var(--bord);margin:0 2px"></div>
+          <button class="pc active" onclick="setPT('chaleureux',this)">CHALEUREUX</button>
+          <button class="pc" onclick="setPT('pro',this)">PRO</button>
+          <button class="pc" onclick="setPT('direct',this)">DIRECT</button>
+        </div>
+        <div class="pz-out empty" id="pz-out">Sélectionner un item → Générer</div>
+        <div class="pz-foot">
+          <button class="btn-gen" id="btn-gen" onclick="genererPitch()">✦ GÉNÉRER</button>
+          <button class="btn-cp" id="btn-cp" onclick="copier()">COPIER</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getFirestore, collection, query, where, orderBy, onSnapshot, doc, updateDoc }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDDqmNZuvK7iSWdwthxKah-49M_XWf_C6g",
+  authDomain:        "mandatscrap.firebaseapp.com",
+  projectId:         "mandatscrap",
+  storageBucket:     "mandatscrap.firebasestorage.app",
+  messagingSenderId: "709831585907",
+  appId:             "1:709831585907:web:e18de97394996b34543a06",
+  measurementId:     "G-RP6HY6KB7W",
+};
+
+try {
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  window._fs = { db, collection, query, where, orderBy, onSnapshot, doc, updateDoc };
+  window.FIREBASE_OK = true;
+
+  // Annonces pige
+  const qPige = query(
+    collection(db, "annonces"),
+    where("statut", "==", "active"),
+    orderBy("score", "desc")
+  );
+  onSnapshot(qPige, snap => {
+    window.DATA_PIGE = snap.docs.map(d => ({ id: d.id, _type: "pige", ...d.data() }));
+    fusionnerEtAfficher();
+  });
+
+  // Contacts SIANA
+  const agentId = window.AGENT_ID || "demo";
+  const qCont = query(
+    collection(db, "contacts"),
+    where("agentId", "==", agentId),
+    where("statut", "==", "actif"),
+    orderBy("score", "desc")
+  );
+  onSnapshot(qCont, snap => {
+    window.DATA_CONTACTS = snap.docs.map(d => ({ id: d.id, _type: "contact", ...d.data() }));
+    fusionnerEtAfficher();
+  });
+
+} catch(e) {
+  console.warn("Firebase non configuré — mode démo");
+  window.FIREBASE_OK = false;
+  setTimeout(chargerDemo, 400);
+}
+</script>
+
+<script>
+// ── DONNÉES DÉMO ──────────────────────────────────────────────────────────────
+const DEMO_PIGE = [
+  { id:"p1", _type:"pige", source:"pap", titre:"Maison 5p avec jardin", typeBien:"maison",
+    surface:118, nbPieces:5, ville:"Haguenau", codePostal:"67500",
+    typeVendeur:"particulier", prixActuel:285000, prixInitial:335000,
+    ancienneteMois:14, nbRepublications:2, score:91, chaleur:"chaud",
+    historiquePrix:[{prix:335000,baisse:false},{prix:310000,baisse:true,montantBaisse:25000},{prix:285000,baisse:true,montantBaisse:25000}],
+    urlOrigine:"#", description:"Belle maison familiale avec grand jardin arboré. Vendeur particulier.",
+    scoringDetail:{anciennete:35,baissesPrix:25,typeVendeur:20,republications:7,surevaluation:0} },
+  { id:"p2", _type:"pige", source:"leboncoin", titre:"Appt T3 centre Strasbourg", typeBien:"appartement",
+    surface:68, nbPieces:3, ville:"Strasbourg", codePostal:"67000",
+    typeVendeur:"agence_independante", prixActuel:198000, prixInitial:215000,
+    ancienneteMois:9, nbRepublications:3, score:78, chaleur:"chaud",
+    historiquePrix:[{prix:215000,baisse:false},{prix:198000,baisse:true,montantBaisse:17000}],
+    urlOrigine:"#", description:"T3 lumineux au 3ème étage avec ascenseur, parquet.",
+    scoringDetail:{anciennete:30,baissesPrix:10,typeVendeur:12,republications:10,surevaluation:0} },
+  { id:"p3", _type:"pige", source:"avendrealouer", titre:"Maison 4p à rénover", typeBien:"maison",
+    surface:95, nbPieces:4, ville:"Bischwiller", codePostal:"67240",
+    typeVendeur:"particulier", prixActuel:178000, prixInitial:178000,
+    ancienneteMois:7, nbRepublications:0, score:62, chaleur:"tiede",
+    historiquePrix:[{prix:178000,baisse:false}],
+    urlOrigine:"#", description:"Maison ancienne à rénover entièrement. Bon potentiel.",
+    scoringDetail:{anciennete:20,baissesPrix:0,typeVendeur:20,republications:0,surevaluation:0} },
+  { id:"p4", _type:"pige", source:"pap", titre:"Grande villa 7 pièces", typeBien:"maison",
+    surface:200, nbPieces:7, ville:"Haguenau", codePostal:"67500",
+    typeVendeur:"particulier", prixActuel:580000, prixInitial:650000,
+    ancienneteMois:16, nbRepublications:2, score:88, chaleur:"chaud",
+    historiquePrix:[{prix:650000,baisse:false},{prix:620000,baisse:true,montantBaisse:30000},{prix:580000,baisse:true,montantBaisse:40000}],
+    urlOrigine:"#", description:"Maison bourgeoise de caractère, parc 1200m². 2 baisses de prix.",
+    scoringDetail:{anciennete:35,baissesPrix:25,typeVendeur:20,republications:7,surevaluation:0} },
+];
+
+const DEMO_CONTACTS = [
+  { id:"c1", _type:"contact", prenom:"Marie", nom:"Klein", ville:"Haguenau", codePostal:"67500",
+    type:"vendeur", score:95, chaleur:"chaud", joursDepuisContact:210,
+    telephone:"06 55 66 77 88", notes:"Succession — hérite de la maison de ses parents. Urgente.",
+    nbEchanges:4, statut:"actif", agentStatut:null,
+    scoringDetail:{anciennete:40,type:25,notes:20,historique:10,ancienneteRelation:0} },
+  { id:"c2", _type:"contact", prenom:"Isabelle", nom:"Ferrand", ville:"Haguenau", codePostal:"67500",
+    type:"vendeur", score:88, chaleur:"chaud", joursDepuisContact:142,
+    telephone:"06 12 34 56 78", notes:"Veut vendre avant l'été, divorce en cours. Rappelée 2x.",
+    nbEchanges:3, statut:"actif", agentStatut:null,
+    scoringDetail:{anciennete:33,type:25,notes:20,historique:6,ancienneteRelation:4} },
+  { id:"c3", _type:"contact", prenom:"Patrick", nom:"Huber", ville:"Strasbourg", codePostal:"67000",
+    type:"les_deux", score:72, chaleur:"chaud", joursDepuisContact:98,
+    telephone:"06 98 76 54 32", notes:"Mutation professionnelle prévue en juin. Vendeur + cherche T4.",
+    nbEchanges:2, statut:"actif", agentStatut:null,
+    scoringDetail:{anciennete:25,type:22,notes:10,historique:6,ancienneteRelation:4} },
+  { id:"c4", _type:"contact", prenom:"Christine", nom:"Wolff", ville:"Bischwiller", codePostal:"67240",
+    type:"vendeur", score:58, chaleur:"tiede", joursDepuisContact:62,
+    telephone:null, notes:"Réfléchit encore. Rappeler début janvier.",
+    nbEchanges:1, statut:"actif", agentStatut:null,
+    scoringDetail:{anciennete:16,type:25,notes:10,historique:3,ancienneteRelation:2} },
+];
+
+// ── ÉTAT ──────────────────────────────────────────────────────────────────────
+window.DATA_PIGE     = [];
+window.DATA_CONTACTS = [];
+window.TOUS          = [];
+window.AFFICHES      = [];
+window.SELECTIONNE   = null;
+window.FILTRE        = "tous";
+window.PF            = "sms";
+window.PT            = "chaleureux";
+window.PITCH_TXT     = "";
+window.VUE           = "terrain";
+
+function chargerDemo() {
+  window.DATA_PIGE     = DEMO_PIGE;
+  window.DATA_CONTACTS = DEMO_CONTACTS;
+  fusionnerEtAfficher();
+}
+
+// ── FUSION + TRI ──────────────────────────────────────────────────────────────
+function fusionnerEtAfficher() {
+  window.TOUS = [...window.DATA_PIGE, ...window.DATA_CONTACTS]
+    .sort((a, b) => (b.score||0) - (a.score||0));
+  appliquer();
+  majStats();
+  majMission();
+  majDate();
+}
+window.fusionnerEtAfficher = fusionnerEtAfficher;
+
+// ── DATE ──────────────────────────────────────────────────────────────────────
+function majDate() {
+  const now = new Date();
+  const opts = { weekday:"long", day:"numeric", month:"long", year:"numeric" };
+  const str = now.toLocaleDateString("fr-FR", opts).toUpperCase();
+  document.getElementById("tb-date").textContent = str;
+  document.getElementById("mp-day").textContent = str;
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function majStats() {
+  const pige     = window.DATA_PIGE;
+  const contacts = window.DATA_CONTACTS;
+  const pChauds  = pige.filter(x => x.chaleur === "chaud").length;
+  const cChauds  = contacts.filter(x => x.chaleur === "chaud").length;
+  const pTotal   = pige.length;
+  const cTotal   = contacts.length;
+  const totalScore = pChauds * 15 + cChauds * 10;
+
+  document.getElementById("js-num").textContent = totalScore;
+  document.getElementById("bar-pige").style.width = Math.min(pTotal * 5, 100) + "%";
+  document.getElementById("bar-cont").style.width = Math.min(cTotal * 10, 100) + "%";
+  document.getElementById("val-pige").textContent = pChauds;
+  document.getElementById("val-cont").textContent = cChauds;
+
+  // Stats vue
+  document.getElementById("stats-grid").innerHTML = [
+    { lbl:"MANDATS CHAUDS",  val:pChauds,  cls:"rouge", sub:`sur ${pTotal} détectés` },
+    { lbl:"CONTACTS CHAUDS", val:cChauds,  cls:"amber", sub:`sur ${cTotal} suivis` },
+    { lbl:"TOTAL DÉTECTÉS",  val:pTotal,   cls:"vert",  sub:"pige active" },
+    { lbl:"BAISSES PRIX",    val:pige.filter(x => (x.historiquePrix||[]).filter(h=>h.baisse).length > 1).length, cls:"rouge", sub:"2+ baisses" },
+    { lbl:"VENDEURS SUIVIS", val:contacts.filter(x=>x.type==="vendeur").length, cls:"amber", sub:"en portefeuille" },
+    { lbl:"INACTIFS +3 MOIS",val:contacts.filter(x=>(x.joursDepuisContact||0)>=90).length, cls:"vert", sub:"à relancer" },
+  ].map(s => `
+    <div class="stat-card">
+      <div class="stat-card-lbl">${s.lbl}</div>
+      <div class="stat-card-num ${s.cls}">${s.val}</div>
+      <div class="stat-card-sub">${s.sub}</div>
+    </div>`).join("");
+}
+
+// ── MISSION DU JOUR ───────────────────────────────────────────────────────────
+function majMission() {
+  const top = window.TOUS.slice(0, 5);
+  const container = document.getElementById("top-actions");
+
+  if (!top.length) {
+    container.innerHTML = `<div style="text-align:center;padding:16px 0;color:var(--txt3);font-family:var(--mono);font-size:10px">Aucune donnée</div>`;
+    return;
+  }
+
+  container.innerHTML = top.map((item, i) => {
+    const isPige = item._type === "pige";
+    const cls = item.chaleur === "chaud" ? "rouge" : "amber";
+    const nom = isPige
+      ? item.titre?.slice(0, 28) + (item.titre?.length > 28 ? "…" : "")
+      : `${item.prenom || ""} ${item.nom || ""}`.trim();
+    const sub = isPige
+      ? `${item.ville} · ${item.ancienneteMois}m · ${item.prixActuel?.toLocaleString("fr-FR")}€`
+      : `${item.ville} · ${Math.round((item.joursDepuisContact||0)/30)}m sans contact`;
+    const tags = [];
+    if (isPige) {
+      const nb = (item.historiquePrix||[]).filter(h=>h.baisse).length;
+      if (nb > 0) tags.push(`<span class="ac-tag hot">${nb} BAISSE${nb>1?"S":""}</span>`);
+      if (item.nbRepublications > 0) tags.push(`<span class="ac-tag warn">${item.nbRepublications}x RÉPUB</span>`);
+      if (item.typeVendeur === "particulier") tags.push(`<span class="ac-tag">PART.</span>`);
+    } else {
+      if (item.type === "vendeur") tags.push(`<span class="ac-tag hot">VENDEUR</span>`);
+      if (item.notes?.match(/divorce|succession|urgent|mutation/i)) tags.push(`<span class="ac-tag hot">URGENT</span>`);
+    }
+
+    return `
+    <div class="action-card ${cls}" onclick="ouvrirItem('${item.id}','${item._type}')">
+      <div class="ac-top">
+        <div class="ac-num">${String(i+1).padStart(2,"0")}</div>
+        <div class="ac-content">
+          <div class="ac-type ${cls}">${isPige ? "MANDAT À RÉCUP." : "CONTACT"}</div>
+          <div class="ac-nom">${nom}</div>
+          <div class="ac-sub">${sub}</div>
+        </div>
+        <div class="ac-score ${cls}">${item.score}</div>
+      </div>
+      ${tags.length ? `<div class="ac-bottom">${tags.join("")}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+// ── FILTRES ───────────────────────────────────────────────────────────────────
+function setFiltre(f, btn) {
+  window.FILTRE = f;
+  document.querySelectorAll(".cb-chip").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  const titres = { tous:"TOUS LES OBJECTIFS", pige:"MANDATS À RÉCUPÉRER", contact:"CONTACTS À RELANCER", chaud:"🔥 CHAUDS UNIQUEMENT" };
+  document.getElementById("cb-title").textContent = titres[f] || "—";
+  appliquer();
+}
+window.setFiltre = setFiltre;
+
+function appliquer() {
+  let items = [...window.TOUS];
+  const f = window.FILTRE;
+  const q = document.getElementById("cb-search")?.value?.toLowerCase() || "";
+
+  if (f === "pige") items = items.filter(x => x._type === "pige");
+  else if (f === "contact") items = items.filter(x => x._type === "contact");
+  else if (f === "chaud") items = items.filter(x => x.chaleur === "chaud");
+
+  if (q) items = items.filter(x => {
+    const hay = `${x.titre||""} ${x.prenom||""} ${x.nom||""} ${x.ville||""} ${x.notes||""}`.toLowerCase();
+    return hay.includes(q);
+  });
+
+  window.AFFICHES = items;
+  afficher(items);
+  document.getElementById("cb-count").textContent = `${items.length} ITEMS`;
+}
+window.appliquer = appliquer;
+
+// ── AFFICHAGE LISTE ───────────────────────────────────────────────────────────
+function afficher(items) {
+  const liste = document.getElementById("liste");
+  if (!items.length) {
+    liste.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:240px;color:var(--txt3);font-family:var(--mono);font-size:11px;gap:8px"><div style="font-size:28px;opacity:.2">⊘</div>Aucun résultat</div>`;
+    return;
+  }
+
+  liste.innerHTML = items.map((item, i) => {
+    const isPige    = item._type === "pige";
+    const chaleur   = item.chaleur || "froid";
+    const cls       = chaleur === "chaud" ? "rouge" : chaleur === "tiede" ? "amber" : "gris";
+    const stripeCls = chaleur === "chaud" ? "is-rouge" : chaleur === "tiede" ? "is-amber" : "is-gris";
+    const isSel     = window.SELECTIONNE?.id === item.id;
+
+    const nom = isPige
+      ? item.titre || "—"
+      : `${item.prenom||""} ${item.nom||""}`.trim() || "—";
+
+    const badge   = isPige ? "🏠" : (item.type === "vendeur" ? "👤" : "🔍");
+    const tagCls  = isPige ? "tag-pige" : "tag-contact";
+    const tagTxt  = isPige ? "PIGE" : (item.type === "vendeur" ? "VENDEUR" : item.type === "les_deux" ? "V+A" : "ACHETEUR");
+
+    const sub1 = isPige
+      ? `${item.ville||"?"} · ${item.ancienneteMois||0}m`
+      : `${item.ville||"?"} · ${Math.round((item.joursDepuisContact||0)/30)}m inactif`;
+    const sub2 = isPige
+      ? item.source
+      : (item.telephone || "Pas de tél.");
+
+    const sigs = [];
+    if (isPige) {
+      const nb = (item.historiquePrix||[]).filter(h=>h.baisse).length;
+      if (nb > 0) sigs.push(`<span class="sig r">${nb} BAISSE${nb>1?"S":""}</span>`);
+      if ((item.nbRepublications||0) > 0) sigs.push(`<span class="sig a">${item.nbRepublications}× RÉPUB</span>`);
+      if (item.typeVendeur === "particulier") sigs.push(`<span class="sig v">PARTICULIER</span>`);
+    } else {
+      if (item.notes?.match(/divorce|succession|urgent|mutation/i)) sigs.push(`<span class="sig r">URGENT</span>`);
+      if ((item.nbEchanges||0) > 2) sigs.push(`<span class="sig v">${item.nbEchanges} ÉCHANGES</span>`);
+      const jours = item.joursDepuisContact || 0;
+      if (jours > 180) sigs.push(`<span class="sig a">+6M INACTIF</span>`);
+    }
+
+    const prixTxt = isPige
+      ? `${item.prixActuel?.toLocaleString("fr-FR")||"?"}€`
+      : "";
+    const prixSub = isPige && item.prixInitial !== item.prixActuel
+      ? `initial: ${item.prixInitial?.toLocaleString("fr-FR")}€`
+      : "";
+
+    return `
+    <div class="item${isSel?" selected":""}" style="animation-delay:${i*.025}s"
+         onclick="ouvrirItem('${item.id}','${item._type}')">
+      <div class="item-stripe ${stripeCls}"></div>
+      <div class="item-score">
+        <div class="is-num ${cls}">${item.score}</div>
+        <div class="is-lbl">${chaleur === "chaud" ? "CHAUD" : chaleur === "tiede" ? "TIÈDE" : "FROID"}</div>
+      </div>
+      <div class="item-badge">${badge}</div>
+      <div class="item-body">
+        <div class="ib-top">
+          <span class="ib-nom">${nom}</span>
+          <span class="ib-type-tag ${tagCls}">${tagTxt}</span>
+        </div>
+        <div class="ib-sub">
+          <span>${sub1}</span>
+          <span style="color:var(--txt3)">${sub2}</span>
+        </div>
+        ${sigs.length ? `<div class="ib-sigs">${sigs.join("")}</div>` : ""}
+      </div>
+      <div class="item-right">
+        ${prixTxt ? `<div class="ir-prix">${prixTxt}</div>` : ""}
+        ${prixSub ? `<div class="ir-sub">${prixSub}</div>` : ""}
+        <button class="btn-act${isPige?"":" amber"}" onclick="event.stopPropagation();ouvrirItem('${item.id}','${item._type}',true)">
+          ✦ PITCH
+        </button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ── DÉTAIL ────────────────────────────────────────────────────────────────────
+function ouvrirItem(id, type, pitchAuto = false) {
+  const data = type === "pige" ? window.DATA_PIGE : window.DATA_CONTACTS;
+  const item = data.find(x => x.id === id);
+  if (!item) return;
+  window.SELECTIONNE = item;
+
+  // Highlight
+  document.querySelectorAll(".item,.action-card").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll(".item").forEach(el => {
+    if (el.getAttribute("onclick")?.includes(id)) el.classList.add("selected");
+  });
+
+  const isPige = item._type === "pige";
+  const chaleur = item.chaleur || "froid";
+  const cls = chaleur === "chaud" ? "rouge" : "amber";
+
+  // Header
+  const ini = isPige
+    ? (item.typeBien === "maison" ? "🏠" : "🏢")
+    : `${(item.prenom||"?")[0]}${(item.nom||"?")[0]}`.toUpperCase();
+  document.getElementById("rp-av").textContent = ini;
+  document.getElementById("rp-av").className = `rp-av ${cls}`;
+  const nom = isPige ? item.titre : `${item.prenom||""} ${item.nom||""}`;
+  document.getElementById("rp-nom").textContent = nom;
+  document.getElementById("rp-sub").textContent = isPige
+    ? `${item.ville} · ${item.ancienneteMois}m sur le marché`
+    : `Score ${item.score}/100 · ${Math.round((item.joursDepuisContact||0)/30)}m sans contact`;
+  document.getElementById("rp-score").textContent = item.score;
+  document.getElementById("rp-score").className = `rp-score ${cls}`;
+
+  // Body
+  const d = item.scoringDetail || {};
+  const criterias = isPige
+    ? [["ANCIENNETÉ", d.anciennete||0, 35], ["BAISSES PRIX", d.baissesPrix||0, 25], ["TYPE VENDEUR", d.typeVendeur||0, 20], ["REPUBLICATIONS", d.republications||0, 10]]
+    : [["INACTIVITÉ", d.anciennete||0, 40], ["TYPE PROSPECT", d.type||0, 25], ["SIGNAUX NOTES", d.notes||0, 20], ["HISTORIQUE", d.historique||0, 10]];
+
+  const breakdown = criterias.map(([lbl, val, max]) => `
+    <div class="bd-row">
+      <div class="bd-lbl">${lbl}</div>
+      <div class="bd-bar"><div class="bd-fill" style="width:${Math.round((val/max)*100)}%;background:${val/max > .6 ? "var(--rouge)" : val/max > .3 ? "var(--amber)" : "var(--txt3)"}"></div></div>
+      <div class="bd-val">${val}/${max}</div>
+    </div>`).join("");
+
+  const infos = isPige ? [
+    ["VILLE", item.ville],
+    ["TYPE", item.typeBien || "—"],
+    ["SURFACE", item.surface ? item.surface+"m²" : "—"],
+    ["PIÈCES", item.nbPieces || "—"],
+    ["VENDEUR", item.typeVendeur === "particulier" ? "👤 Part." : "🏢 Agence"],
+    ["SOURCE", item.source],
+    ["EN VENTE DEPUIS", (item.ancienneteMois||0)+"m"],
+    ["REPUBLICATIONS", (item.nbRepublications||0)+"×"],
+  ] : [
+    ["PRÉNOM", item.prenom||"—"],
+    ["NOM", item.nom||"—"],
+    ["TÉLÉPHONE", item.telephone||"—"],
+    ["VILLE", item.ville||"—"],
+    ["TYPE", item.type === "vendeur" ? "🏠 Vendeur" : item.type === "les_deux" ? "V+A" : "🔍 Acheteur"],
+    ["INACTIVITÉ", Math.round((item.joursDepuisContact||0)/30)+"m"],
+    ["ÉCHANGES", (item.nbEchanges||0)+""],
+    ["EMAIL", item.email||"—"],
+  ];
+
+  const histoPrix = isPige && item.historiquePrix ? item.historiquePrix.map(h => {
+    const date = new Date(h.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+    return `<span class="sig${h.baisse?" r":""}">${date} · ${h.prix?.toLocaleString("fr-FR")}€${h.baisse?" ▼":""}</span>`;
+  }).join("") : "";
+
+  const wfBtns = isPige
+    ? [["contacte","CONTACTÉ"],["rdv","RDV DÉCROCHÉ"],["mandat","MANDAT ✓"],["pas_interesse","SKIP"]]
+    : [["contacte","CONTACTÉ"],["rdv","RDV DÉCROCHÉ"],["mandat","MANDAT ✓"],["pause","PAUSE"]];
+
+  document.getElementById("rp-body").innerHTML = `
+    <!-- Breakdown -->
+    <div class="sec-lbl">DÉCOMPOSITION SCORE</div>
+    <div class="breakdown" style="margin-bottom:12px">${breakdown}</div>
+
+    <!-- Infos -->
+    <div class="sec-lbl">INFORMATIONS</div>
+    <div class="info-grid" style="margin-bottom:12px">
+      ${infos.map(([l,v]) => `<div class="ig-item"><div class="ig-lbl">${l}</div><div class="ig-val">${v}</div></div>`).join("")}
+    </div>
+
+    ${isPige && item.historiquePrix?.length > 1 ? `
+    <div class="sec-lbl">HISTORIQUE PRIX</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">${histoPrix}</div>` : ""}
+
+    ${!isPige && item.notes ? `
+    <div class="sec-lbl">NOTES</div>
+    <div class="breakdown" style="margin-bottom:12px;font-family:var(--mono);font-size:11px;color:var(--txt2);line-height:1.6">${item.notes}</div>` : ""}
+
+    <!-- Statut -->
+    <div class="sec-lbl">STATUT</div>
+    <div class="wf-row">
+      ${wfBtns.map(([s,l]) => `<button class="wf-b${item.agentStatut===s?" on":""}" onclick="setStatut('${s}')">${l}</button>`).join("")}
+    </div>
+
+    ${isPige ? `
+    <div style="margin-top:10px">
+      <a href="${item.urlOrigine||"#"}" target="_blank" style="text-decoration:none">
+        <button class="wf-b" style="width:100%;text-align:center">↗ VOIR L'ANNONCE ORIGINALE</button>
+      </a>
+    </div>` : ""}
+  `;
+
+  // Reset pitch
+  document.getElementById("pz-out").textContent = "Sélectionner un item → Générer";
+  document.getElementById("pz-out").className = "pz-out empty";
+  document.getElementById("btn-gen").textContent = "✦ GÉNÉRER";
+  window.PITCH_TXT = "";
+
+  document.getElementById("rp").classList.add("open");
+  if (pitchAuto) setTimeout(genererPitch, 250);
+}
+window.ouvrirItem = ouvrirItem;
+
+function fermer() {
+  document.getElementById("rp").classList.remove("open");
+  document.querySelectorAll(".item,.action-card").forEach(el => el.classList.remove("selected"));
+  window.SELECTIONNE = null;
+}
+window.fermer = fermer;
+
+// ── STATUT ────────────────────────────────────────────────────────────────────
+async function setStatut(s) {
+  const item = window.SELECTIONNE;
+  if (!item) return;
+  item.agentStatut = s;
+
+  if (window.FIREBASE_OK && window._fs) {
+    const { db, doc, updateDoc } = window._fs;
+    const coll = item._type === "pige" ? "annonces" : "contacts";
+    await updateDoc(doc(db, coll, item.id), {
+      agentStatut: s, updatedAt: new Date().toISOString(),
+      ...(s === "contacte" && item._type === "contact" ? {
+        dateDernierContact: new Date().toISOString(), nbEchanges: (item.nbEchanges||0) + 1
+      } : {})
+    });
+  }
+
+  document.querySelectorAll(".wf-b").forEach(b => {
+    b.classList.toggle("on", b.getAttribute("onclick")?.includes(`'${s}'`));
+  });
+  toast(s === "mandat" ? "🎉 MANDAT SIGNÉ !" : "STATUT MIS À JOUR", "v");
+  appliquer();
+}
+window.setStatut = setStatut;
+
+// ── PITCH ─────────────────────────────────────────────────────────────────────
+function setPF(f, btn) {
+  window.PF = f;
+  btn.closest("#pz-ctrls").querySelectorAll(".pc").forEach((b,i) => { if(i<3) b.classList.remove("active"); });
+  btn.classList.add("active");
+}
+window.setPF = setPF;
+
+function setPT(t, btn) {
+  window.PT = t;
+  const btns = btn.closest("#pz-ctrls").querySelectorAll(".pc");
+  [btns[3],btns[4],btns[5]].forEach(b => b?.classList.remove("active"));
+  btn.classList.add("active");
+}
+window.setPT = setPT;
+
+async function genererPitch() {
+  const item = window.SELECTIONNE;
+  if (!item) return;
+
+  const out = document.getElementById("pz-out");
+  const btn = document.getElementById("btn-gen");
+  btn.disabled = true; btn.textContent = "GÉNÉRATION…";
+  out.className = "pz-out loading pulsing";
+  out.textContent = "IA en cours…";
+
+  const isPige = item._type === "pige";
+  const nb = (item.historiquePrix||[]).filter(h=>h.baisse).length;
+  const pct = item.prixInitial && item.prixActuel < item.prixInitial
+    ? Math.round(((item.prixInitial - item.prixActuel) / item.prixInitial) * 100) : 0;
+
+  const prompt = isPige
+    ? `Tu es un agent LF Immo en Alsace. Rédige un message de prise de contact pour un bien immobilier en vente depuis longtemps.
+BIEN : ${item.typeBien||"bien"} ${item.nbPieces||"?"}p ${item.surface||"?"}m² à ${item.ville} (${item.codePostal})
+Prix actuel : ${item.prixActuel?.toLocaleString("fr-FR")}€ · Initial : ${item.prixInitial?.toLocaleString("fr-FR")}€ · ${nb} baisse(s) -${pct}%
+En vente depuis : ${item.ancienneteMois} mois · Vendeur : ${item.typeVendeur} · Republié : ${item.nbRepublications||0}x
+FORMAT : ${window.PF === "sms" ? "SMS max 160 car" : window.PF === "email" ? "Email avec objet + 3 §" : "Script appel + 2 objections"}
+TON : ${window.PT} · Signer: agent LF Immo · Génère uniquement le message.`
+    : `Tu es un agent LF Immo en Alsace. Rédige un message de relance pour un contact inactif.
+Contact : ${item.prenom||""} ${item.nom||""} · ${item.ville||"?"} · ${item.type === "vendeur" ? "Vendeur" : "Acheteur"}
+Inactif depuis : ${Math.round((item.joursDepuisContact||0)/30)} mois · Notes : ${item.notes||"Aucune"}
+FORMAT : ${window.PF === "sms" ? "SMS max 160 car" : window.PF === "email" ? "Email avec objet + 3 §" : "Script appel + 2 objections"}
+TON : ${window.PT} · Génère uniquement le message.`;
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514", max_tokens: 500,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!resp.ok) throw new Error(resp.status);
+    const data = await resp.json();
+    window.PITCH_TXT = data.content?.[0]?.text || "";
+  } catch(e) {
+    window.PITCH_TXT = isPige
+      ? `Bonjour, je suis agent LF Immo à ${item.ville}. Votre ${item.typeBien||"bien"} est en vente depuis ${item.ancienneteMois} mois. J'ai des acheteurs qualifiés sur votre secteur. Échange de 10 min ?`
+      : `Bonjour ${item.prenom||""}, c'est votre agent LF Immo. Cela fait ${Math.round((item.joursDepuisContact||0)/30)} mois que l'on ne s'est pas parlé. Votre projet est-il toujours d'actualité ? Je serais ravi d'en discuter cette semaine.`;
+  }
+
+  out.className = "pz-out"; out.textContent = window.PITCH_TXT;
+  btn.disabled = false; btn.textContent = "✦ RÉGÉNÉRER";
+}
+window.genererPitch = genererPitch;
+
+async function copier() {
+  if (!window.PITCH_TXT) return;
+  try {
+    await navigator.clipboard.writeText(window.PITCH_TXT);
+    const btn = document.getElementById("btn-cp");
+    btn.textContent = "✓ COPIÉ"; btn.classList.add("ok");
+    setTimeout(() => { btn.textContent = "COPIER"; btn.classList.remove("ok"); }, 2000);
+  } catch(e) { toast("COPIE IMPOSSIBLE", "r"); }
+}
+window.copier = copier;
+
+// ── BRIEF IA ──────────────────────────────────────────────────────────────────
+async function genererBrief() {
+  const btn = document.getElementById("btn-brief");
+  const out = document.getElementById("brief-out");
+  btn.disabled = true; btn.textContent = "ANALYSE EN COURS…";
+  out.classList.add("visible");
+  out.textContent = "L'IA analyse votre portefeuille…";
+
+  const pige = window.DATA_PIGE;
+  const contacts = window.DATA_CONTACTS;
+  const top3pige = pige.sort((a,b) => b.score-a.score).slice(0,3);
+  const top3cont = contacts.sort((a,b) => b.score-a.score).slice(0,3);
+  const date = new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+
+  const prompt = `Tu es le copilote stratégique d'un agent immobilier LF Immo en Alsace.
+Génère un brief matinal ultra-concis pour le ${date}.
+
+MANDATS À RÉCUPÉRER (top 3) :
+${top3pige.map(p => `- ${p.titre} à ${p.ville} · ${p.ancienneteMois}m · score ${p.score} · ${(p.historiquePrix||[]).filter(h=>h.baisse).length} baisses`).join("\n") || "Aucun"}
+
+CONTACTS À RELANCER (top 3) :
+${top3cont.map(c => `- ${c.prenom} ${c.nom} à ${c.ville} · ${Math.round((c.joursDepuisContact||0)/30)}m inactif · score ${c.score} · ${c.type} · notes: ${(c.notes||"").slice(0,50)}`).join("\n") || "Aucun"}
+
+Format : 5-6 lignes max, ton direct et stratégique comme un coach business. Commence par "CE MATIN :" puis les 3 actions prioritaires numérotées, puis 1 ligne conseil stratégique.`;
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:300, messages:[{role:"user",content:prompt}] }),
+    });
+    const data = await resp.json();
+    out.textContent = data.content?.[0]?.text || "—";
+  } catch(e) {
+    out.textContent = `CE MATIN :\n1. Appeler ${contacts[0]?.prenom||"?"} ${contacts[0]?.nom||""} — inactif depuis ${Math.round((contacts[0]?.joursDepuisContact||0)/30)}m, score ${contacts[0]?.score||0}\n2. Contacter le vendeur du "${pige[0]?.titre||"?"}" à ${pige[0]?.ville||"?"} — ${pige[0]?.ancienneteMois||0}m sur le marché\n3. Suivre le "${pige[1]?.titre||"?"}" — ${(pige[1]?.historiquePrix||[]).filter(h=>h.baisse).length} baisses de prix\n\n→ Focus vendeurs : 3 contacts chauds aujourd'hui = 1 mandat potentiel.`;
+  }
+
+  btn.disabled = false; btn.textContent = "✦ RÉGÉNÉRER LE BRIEF";
+}
+window.genererBrief = genererBrief;
+
+// ── VUE ───────────────────────────────────────────────────────────────────────
+function setVue(v, btn) {
+  window.VUE = v;
+  document.querySelectorAll(".ttab").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("list-view").classList.toggle("hidden", v !== "terrain");
+  document.getElementById("stats-view").classList.toggle("active", v === "stats");
+  if (v === "terrain") fermer();
+}
+window.setVue = setVue;
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg, type = "") {
+  const t = document.createElement("div");
+  t.style.cssText = `position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(40px);
+    background:${type==="v"?"var(--vert)":type==="r"?"var(--rouge)":"var(--noir3)"};
+    color:#fff;padding:8px 18px;border-radius:5px;font-family:var(--mono);font-size:11px;
+    letter-spacing:.06em;z-index:999;transition:transform .25s,opacity .25s;opacity:0;
+    border:1px solid ${type==="v"?"var(--vert)":type==="r"?"var(--rouge)":"var(--bord2)"}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.transform = "translateX(-50%) translateY(0)"; t.style.opacity = "1"; });
+  setTimeout(() => {
+    t.style.opacity = "0"; t.style.transform = "translateX(-50%) translateY(20px)";
+    setTimeout(() => t.remove(), 300);
+  }, 2500);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+majDate();
+</script>
+</body>
+</html>

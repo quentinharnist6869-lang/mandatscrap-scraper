@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MandatScrap — Connexion</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --noir:#0C0C0C;--noir2:#121212;--noir3:#1A1A1A;--noir4:#222;
+  --bord:rgba(255,255,255,.07);--bord2:rgba(255,255,255,.14);
+  --txt:#F0EEE8;--txt2:#888;--txt3:#444;
+  --rouge:#CC2B2B;--rouge-vif:#E03535;--rouge-pale:rgba(204,43,43,.12);
+  --mono:'JetBrains Mono',monospace;
+  --cond:'Barlow Condensed',sans-serif;
+  --body:'Barlow',sans-serif;
+}
+html,body{height:100%;background:var(--noir);color:var(--txt);font-family:var(--body);display:flex;align-items:center;justify-content:center}
+
+/* Grille de fond */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(var(--bord) 1px,transparent 1px),linear-gradient(90deg,var(--bord) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;
+}
+
+.card{
+  background:var(--noir2);border:1px solid var(--bord2);border-radius:14px;
+  padding:40px;width:100%;max-width:400px;position:relative;z-index:1;
+  animation:fadeIn .4s ease;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.logo-sq{width:36px;height:36px;background:var(--rouge);border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--cond);font-size:16px;font-weight:800;color:#fff}
+.logo-txt{font-family:var(--cond);font-size:20px;font-weight:800;letter-spacing:.04em}
+.logo-sub{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:1px}
+
+h1{font-family:var(--cond);font-size:26px;font-weight:800;letter-spacing:.02em;margin-bottom:6px}
+.subtitle{font-size:13px;color:var(--txt2);margin-bottom:28px}
+
+.form-group{margin-bottom:16px}
+label{display:block;font-family:var(--mono);font-size:10px;color:var(--txt2);
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+input{
+  width:100%;padding:11px 14px;border-radius:7px;
+  background:var(--noir3);border:1px solid var(--bord2);
+  color:var(--txt);font-family:var(--body);font-size:14px;outline:none;
+  transition:border-color .15s;
+}
+input:focus{border-color:var(--rouge)}
+input::placeholder{color:var(--txt3)}
+
+.btn-login{
+  width:100%;padding:12px;border-radius:7px;margin-top:8px;
+  background:var(--rouge);border:none;color:#fff;
+  font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.06em;
+  cursor:pointer;transition:background .15s;
+}
+.btn-login:hover{background:var(--rouge-vif)}
+.btn-login:disabled{background:var(--noir4);color:var(--txt3);cursor:not-allowed}
+
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--txt3);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--bord2)}
+
+.btn-google{
+  width:100%;padding:11px;border-radius:7px;
+  background:transparent;border:1px solid var(--bord2);color:var(--txt2);
+  font-family:var(--body);font-size:14px;font-weight:500;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-google:hover{border-color:var(--bord2);background:var(--noir3);color:var(--txt)}
+
+.error-msg{
+  background:var(--rouge-pale);border:1px solid rgba(204,43,43,.3);
+  border-radius:6px;padding:10px 12px;font-size:13px;color:#FF8A8A;
+  margin-top:12px;display:none;font-family:var(--mono);
+}
+.error-msg.visible{display:block}
+
+.footer-link{
+  text-align:center;margin-top:24px;font-size:12px;color:var(--txt3);font-family:var(--mono);
+}
+.footer-link a{color:var(--rouge);text-decoration:none}
+.footer-link a:hover{text-decoration:underline}
+
+.loading-spinner{
+  display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-sq">LF</div>
+    <div>
+      <div class="logo-txt">COMMAND</div>
+      <div class="logo-sub">La Fédération de l'Immobilier</div>
+    </div>
+  </div>
+
+  <h1>CONNEXION</h1>
+  <div class="subtitle">Accès réservé aux agents LF Immo et LMD Immobilier</div>
+
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="votre@email.com" autocomplete="email">
+  </div>
+
+  <div class="form-group">
+    <label>Mot de passe</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')connexion()">
+  </div>
+
+  <button class="btn-login" id="btn-login" onclick="connexion()">
+    SE CONNECTER
+  </button>
+
+  <div class="divider">ou</div>
+
+  <button class="btn-google" onclick="connexionGoogle()">
+    <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+    Continuer avec Google
+  </button>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="footer-link">
+    Première connexion ? <a href="register.html">Créer un compte</a>
+  </div>
+</div>
+
+<!-- Firebase Auth SDK -->
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signInWithPopup,
+         GoogleAuthProvider, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+// ── CONFIG — mêmes valeurs que dans index.html ───────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyDDqmNZuvK7iSWdwthxKah-49M_XWf_C6g",
+  authDomain:        "mandatscrap.firebaseapp.com",
+  projectId:         "mandatscrap",
+  storageBucket:     "mandatscrap.firebasestorage.app",
+  messagingSenderId: "709831585907",
+  appId:             "1:709831585907:web:e18de97394996b34543a06",
+  measurementId:     "G-RP6HY6KB7W",
+};
+
+const app      = initializeApp(firebaseConfig);
+const auth     = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// Si déjà connecté → rediriger vers l'app
+onAuthStateChanged(auth, user => {
+  if (user) window.location.href = "index.html";
+});
+
+// Connexion email + mot de passe
+window.connexion = async function() {
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const btn      = document.getElementById("btn-login");
+  const err      = document.getElementById("error-msg");
+
+  if (!email || !password) {
+    afficherErreur("Email et mot de passe requis");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span>';
+  err.classList.remove("visible");
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    // onAuthStateChanged va rediriger automatiquement
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = "SE CONNECTER";
+
+    const messages = {
+      "auth/user-not-found":    "Aucun compte avec cet email",
+      "auth/wrong-password":    "Mot de passe incorrect",
+      "auth/invalid-email":     "Email invalide",
+      "auth/too-many-requests": "Trop de tentatives — réessayez dans quelques minutes",
+      "auth/user-disabled":     "Compte désactivé — contactez l'administrateur",
+      "auth/invalid-credential":"Email ou mot de passe incorrect",
+    };
+    afficherErreur(messages[e.code] || `Erreur : ${e.message}`);
+  }
+};
+
+// Connexion Google
+window.connexionGoogle = async function() {
+  const err = document.getElementById("error-msg");
+  err.classList.remove("visible");
+  try {
+    await signInWithPopup(auth, provider);
+    // onAuthStateChanged redirige
+  } catch(e) {
+    if (e.code !== "auth/popup-closed-by-user") {
+      afficherErreur("Connexion Google échouée — réessayez");
+    }
+  }
+};
+
+function afficherErreur(msg) {
+  const err = document.getElementById("error-msg");
+  err.textContent = msg;
+  err.classList.add("visible");
+}
+</script>
+
+</body>
+</html>

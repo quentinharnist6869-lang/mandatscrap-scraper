@@ -1,0 +1,116 @@
+// firestore.rules
+// Règles de sécurité Firestore pour MandatScrap
+// À déployer via : firebase deploy --only firestore:rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function estConnecte() {
+      return request.auth != null;
+    }
+
+    function monUid() {
+      return request.auth.uid;
+    }
+
+    function monProfil() {
+      return get(/databases/$(database)/documents/agents/$(monUid())).data;
+    }
+
+    function estAdmin() {
+      return estConnecte() && monProfil().role == 'admin';
+    }
+
+    function estAgent() {
+      return estConnecte() && monProfil().statut == 'actif';
+    }
+
+    function mesZones() {
+      return monProfil().zones;
+    }
+
+    // ── Agents (profils) ──────────────────────────────────────────────────
+    // Chaque agent peut lire et modifier uniquement son propre profil
+    // L'admin peut tout lire
+    match /agents/{agentId} {
+      allow read: if estConnecte() && (monUid() == agentId || estAdmin());
+      allow create: if estConnecte() && monUid() == agentId;
+      allow update: if estConnecte() && (monUid() == agentId || estAdmin());
+      allow delete: if estAdmin();
+    }
+
+    // ── Annonces pige ─────────────────────────────────────────────────────
+    // Un agent peut lire les annonces dont le code postal est dans ses zones
+    // Le scraper (service account) peut tout écrire
+    // L'admin peut tout faire
+    match /annonces/{annonceId} {
+
+      // Lecture : agent peut voir si le CP de l'annonce est dans ses zones
+      allow read: if estConnecte() && (
+        estAdmin() ||
+        resource.data.codePostal in mesZones() ||
+        // Aussi les annonces sans CP (sécurité permissive pour ne pas bloquer)
+        !('codePostal' in resource.data)
+      );
+
+      // Création/mise à jour : uniquement le service account (scraper)
+      // ou l'admin. Les agents ne peuvent PAS créer des annonces
+      allow create, update: if estAdmin();
+
+      // Mise à jour du statut agent uniquement (contacté, RDV, etc.)
+      // L'agent peut modifier agentStatut si l'annonce est dans sa zone
+      allow update: if estConnecte() &&
+        resource.data.codePostal in mesZones() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['agentStatut', 'agentId', 'agentStatutDate', 'updatedAt']);
+
+      allow delete: if estAdmin();
+    }
+
+    // ── Contacts SIANA ────────────────────────────────────────────────────
+    // Chaque agent ne voit QUE ses propres contacts
+    match /contacts/{contactId} {
+
+      // Lecture : uniquement ses propres contacts
+      allow read: if estConnecte() && (
+        estAdmin() ||
+        resource.data.agentId == monUid()
+      );
+
+      // Création : uniquement pour soi-même
+      allow create: if estConnecte() &&
+        request.resource.data.agentId == monUid();
+
+      // Modification : uniquement ses propres contacts
+      allow update: if estConnecte() && (
+        estAdmin() ||
+        resource.data.agentId == monUid()
+      );
+
+      // Suppression : ses propres contacts ou admin
+      allow delete: if estConnecte() && (
+        estAdmin() ||
+        resource.data.agentId == monUid()
+      );
+    }
+
+    // ── Config réseau (admin only) ────────────────────────────────────────
+    match /config/{docId} {
+      allow read: if estConnecte();
+      allow write: if estAdmin();
+    }
+
+    // ── Stats globales (lecture seule pour agents) ────────────────────────
+    match /stats/{docId} {
+      allow read: if estConnecte();
+      allow write: if estAdmin();
+    }
+
+    // ── Tout le reste : refusé par défaut ─────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
