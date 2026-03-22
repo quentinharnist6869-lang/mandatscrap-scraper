@@ -1,4 +1,7 @@
-// leboncoin.js — selecteurs robustes 2026
+// leboncoin-api.js — scraper via API interne LeBonCoin
+// Intercepte les requetes XHR de l'app LBC au lieu de parser le HTML
+// Beaucoup plus stable car l'API change moins souvent que le HTML
+
 const puppeteer = require("puppeteer");
 const config    = require("./config");
 const { genererFingerprint } = require("./fingerprint");
@@ -6,37 +9,196 @@ const { genererFingerprint } = require("./fingerprint");
 function delai(min, max) {
   return new Promise(r => setTimeout(r, Math.floor(Math.random() * (max - min + 1)) + min));
 }
+
 function userAgentAleatoire() {
   return config.userAgents[Math.floor(Math.random() * config.userAgents.length)];
 }
-function extrairePrix(str) {
-  if (!str) return null;
-  const n = str.replace(/[^0-9]/g, "");
-  return n ? parseInt(n) : null;
-}
-function extraireSurface(str) {
-  if (!str) return null;
-  const m = str.match(/(\d+)/);
-  return m ? parseInt(m[1]) : null;
-}
-function extrairePieces(str) {
-  if (!str) return null;
-  const m = str.match(/(\d+)/);
-  return m ? parseInt(m[1]) : null;
+
+/**
+ * Scrape LeBonCoin en interceptant les reponses API JSON
+ * LBC charge ses annonces via fetch() vers api.leboncoin.fr
+ * On intercepte ces reponses directement
+ */
+async function scraperLeBonCoinAPI(zone = "alsace") {
+  const zoneConfig = config.zones[zone];
+  if (!zoneConfig) throw new Error("Zone inconnue : " + zone);
+  console.log("Demarrage LeBonCoin (API) — Zone:", zoneConfig.label);
+
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: [
+      "--no-sandbox", "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage", "--disable-gpu",
+      "--single-process",
+    ],
+  });
+
+  const annoncesRecuperees = [];
+
+  try {
+    const page = await browser.newPage();
+    await page.setUserAgent(userAgentAleatoire());
+    await page.setViewport({ width: 1366, height: 768 });
+
+    // Intercepter toutes les reponses reseau
+    const reponsesAPI = [];
+
+    page.on("response", async response => {
+      const url = response.url();
+      const contentType = response.headers()["content-type"] || "";
+
+      // On cherche les appels API qui retournent des annonces
+      if (
+        (url.includes("api.leboncoin.fr") || url.includes("leboncoin.fr/api")) &&
+        contentType.includes("application/json")
+      ) {
+        try {
+          const body = await response.json();
+          if (body?.ads && Array.isArray(body.ads)) {
+            console.log("  API interceptee:", url.slice(0, 80));
+            console.log("  Annonces dans la reponse:", body.ads.length);
+            reponsesAPI.push(body);
+          }
+        } catch(e) {}
+      }
+    });
+
+    // Naviguer sur la page de recherche — LBC va faire ses appels API
+    for (let numPage = 1; numPage <= config.maxPages; numPage++) {
+      reponsesAPI.length = 0; // Reset
+
+      const url = `https://www.leboncoin.fr/recherche?category=9&owner_type=all&real_estate_type=1,2&locations=${zoneConfig.lbcLocation}&page=${numPage}`;
+      console.log("  Page", numPage + "/" + config.maxPages);
+
+      try {
+        await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+        await delai(2000, 3000);
+
+        if (reponsesAPI.length === 0) {
+          console.log("  Aucune reponse API interceptee — tentative scraping HTML");
+          // Fallback HTML si l'API n'est pas interceptee
+          const annoncesFallback = await scraperPageHTML(page, url);
+          if (annoncesFallback.length === 0) {
+            console.log("  Fin des resultats");
+            break;
+          }
+          annoncesRecuperees.push(...annoncesFallback.map(a => parserAnnonceHTML(a, zone)));
+          continue;
+        }
+
+        // Parser les annonces depuis les reponses API
+        for (const reponse of reponsesAPI) {
+          const annonces = parserAnnoncesAPI(reponse.ads, zone);
+          annoncesRecuperees.push(...annonces);
+          console.log("  " + annonces.length + " annonces parsees depuis l'API");
+
+          // Verifier s'il y a d'autres pages
+          if (reponse.total && reponse.total <= numPage * 35) {
+            console.log("  Toutes les annonces recuperees");
+            break;
+          }
+        }
+
+        await delai(config.delaiEntrePages.min, config.delaiEntrePages.max);
+
+      } catch(e) {
+        console.error("  Erreur page", numPage, ":", e.message);
+      }
+    }
+
+  } finally {
+    await browser.close();
+  }
+
+  console.log("LeBonCoin API termine —", annoncesRecuperees.length, "annonces");
+  return annoncesRecuperees;
 }
 
-async function scraperPageLBC(page, url) {
-  await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
-  await delai(2000, 4000);
+/**
+ * Parser les annonces depuis la reponse JSON de l'API LBC
+ * Structure typique : { ads: [{ subject, price, location, attributes, url, ... }] }
+ */
+function parserAnnoncesAPI(ads, zone) {
+  const annonces = [];
 
+  for (const ad of ads) {
+    try {
+      // Extraire les attributs (surface, pieces, type)
+      const attrs = {};
+      if (ad.attributes) {
+        ad.attributes.forEach(a => {
+          attrs[a.key] = a.value_label || a.values?.[0]?.value_label || a.value;
+        });
+      }
+
+      const surface  = attrs.square ? parseInt(attrs.square) : null;
+      const nbPieces = attrs.rooms  ? parseInt(attrs.rooms)  : null;
+
+      // Type de bien
+      let typeBien = "inconnu";
+      const realEstateType = attrs.real_estate_type?.toLowerCase() || "";
+      const sujet = (ad.subject || "").toLowerCase();
+      if (realEstateType.includes("maison") || sujet.includes("maison") || sujet.includes("villa")) {
+        typeBien = "maison";
+      } else if (realEstateType.includes("appartement") || sujet.includes("appartement") || sujet.includes("studio")) {
+        typeBien = "appartement";
+      }
+
+      // Type vendeur
+      const typeVendeur = ad.owner?.type === "pro" ? "agence_independante" : "particulier";
+
+      // Localisation
+      const ville      = ad.location?.city || ad.location?.region_name || "";
+      const codePostal = ad.location?.zipcode || "";
+
+      // Prix
+      const prix = ad.price?.[0] || null;
+
+      // URL
+      const adUrl = ad.url
+        ? (ad.url.startsWith("http") ? ad.url : "https://www.leboncoin.fr" + ad.url)
+        : "";
+
+      const annonce = {
+        source:      "leboncoin",
+        url:         adUrl,
+        titre:       ad.subject || "",
+        prix,
+        surface,
+        nbPieces,
+        ville,
+        codePostal,
+        typeBien,
+        typeVendeur,
+        description: ad.body?.slice(0, 500) || null,
+        zone,
+        // Donnees supplementaires disponibles via l'API
+        datePublication: ad.first_publication_date || null,
+        nbImages:        ad.images?.nb_images || 0,
+      };
+
+      annonce.fingerprint = genererFingerprint(annonce);
+      if (annonce.fingerprint) annonces.push(annonce);
+
+    } catch(e) {
+      console.warn("  Erreur parsing annonce API:", e.message);
+    }
+  }
+
+  return annonces;
+}
+
+/**
+ * Fallback HTML si l'API n'est pas interceptee
+ */
+async function scraperPageHTML(page, url) {
   const annonces = await page.evaluate(() => {
     const items = [];
     const selecteurs = [
       '[data-test-id="ad"]',
-      'article[data-qa-id="aditem_container"]',
+      'article[data-qa-id]',
       'article[class*="styles_adCard"]',
       'article[class*="AdCard"]',
-      'li[class*="styles_"]',
       'article',
     ];
 
@@ -71,115 +233,43 @@ async function scraperPageLBC(page, url) {
 
         const texte = carte.textContent || "";
         const surfaceMatch = texte.match(/(\d+)\s*m[²2]/i);
-        const piecesMatch = texte.match(/(\d+)\s*p[ie]/i);
+        const piecesMatch = texte.match(/(\d+)\s*pi/i);
 
         if (href && titre && titre.length > 3) {
           items.push({
             titre, prixTexte, locTexte, url: annUrl,
-            surface: surfaceMatch ? surfaceMatch[0] : "",
-            pieces: piecesMatch ? piecesMatch[0] : "",
+            surface: surfaceMatch ? surfaceMatch[1] : "",
+            pieces: piecesMatch ? piecesMatch[1] : "",
           });
         }
       } catch(e) {}
     });
     return items;
   });
-
   return annonces;
 }
 
-async function scraperDetailLBC(page, url) {
-  try {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await delai(1000, 2000);
-    return await page.evaluate(() => {
-      const descEl = document.querySelector('[data-test-id="description-text"]') ||
-        document.querySelector('[class*="description" i]');
-      const description = descEl?.textContent?.trim()?.slice(0, 500) || "";
-      const proEl = document.querySelector('[data-test-id="profile-link-name"]') ||
-        document.querySelector('[class*="seller" i]');
-      const typeVendeurTexte = proEl?.textContent?.trim() || "";
-      const texte = document.body.textContent || "";
-      const surfaceMatch = texte.match(/(\d+)\s*m[²2]/i);
-      const piecesMatch = texte.match(/(\d+)\s*pi[ee]ce/i);
-      return {
-        description, typeVendeurTexte,
-        surface: surfaceMatch ? surfaceMatch[0] : "",
-        pieces: piecesMatch ? piecesMatch[0] : "",
-      };
-    });
-  } catch(e) {
-    return { description: "", typeVendeurTexte: "", surface: "", pieces: "" };
-  }
-}
-
-function parserAnnonce(raw, detail, zone) {
-  const locMatch = raw.locTexte.match(/^(.+?)\s+(\d{5})/);
-  const ville = locMatch ? locMatch[1].trim() : raw.locTexte.split(",")[0].trim();
+function parserAnnonceHTML(raw, zone) {
+  const locMatch = (raw.locTexte || "").match(/^(.+?)\s+(\d{5})/);
+  const ville = locMatch ? locMatch[1].trim() : (raw.locTexte || "").split(",")[0].trim();
   const codePostal = locMatch ? locMatch[2] : "";
-  const surface = extraireSurface(detail.surface || raw.surface || "");
-  const nbPieces = extrairePieces(detail.pieces || raw.pieces || "");
+  const prix = raw.prixTexte ? parseInt(raw.prixTexte.replace(/[^0-9]/g, "")) || null : null;
+  const surface = raw.surface ? parseInt(raw.surface) || null : null;
+  const nbPieces = raw.pieces ? parseInt(raw.pieces) || null : null;
 
   let typeBien = "inconnu";
   const t = (raw.titre || "").toLowerCase();
   if (t.includes("maison") || t.includes("villa")) typeBien = "maison";
   else if (t.includes("appartement") || t.includes("studio")) typeBien = "appartement";
 
-  let typeVendeur = "particulier";
-  const tv = (detail.typeVendeurTexte || "").toLowerCase();
-  if (tv.includes("agence") || tv.includes("pro")) typeVendeur = "agence_independante";
-
   const annonce = {
     source: "leboncoin", url: raw.url, titre: raw.titre,
-    prix: extrairePrix(raw.prixTexte), surface, nbPieces,
-    ville, codePostal, typeBien, typeVendeur,
-    description: detail.description || null, zone,
+    prix, surface, nbPieces, ville, codePostal,
+    typeBien, typeVendeur: "particulier",
+    description: null, zone,
   };
   annonce.fingerprint = genererFingerprint(annonce);
   return annonce;
 }
 
-async function scraperLeBonCoin(zone = "alsace") {
-  const zoneConfig = config.zones[zone];
-  if (!zoneConfig) throw new Error("Zone inconnue : " + zone);
-  console.log("Demarrage LeBonCoin — Zone:", zoneConfig.label);
-
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--single-process"],
-  });
-
-  const annonces = [];
-  try {
-    const page = await browser.newPage();
-    await page.setUserAgent(userAgentAleatoire());
-    await page.setViewport({ width: 1366, height: 768 });
-    await page.setExtraHTTPHeaders({ "Accept-Language": "fr-FR,fr;q=0.9" });
-
-    for (let numPage = 1; numPage <= config.maxPages; numPage++) {
-      const url = `https://www.leboncoin.fr/recherche?category=9&owner_type=all&real_estate_type=1,2&locations=${zoneConfig.lbcLocation}&page=${numPage}`;
-      console.log("  Page", numPage);
-      try {
-        const brutes = await scraperPageLBC(page, url);
-        if (brutes.length === 0) { console.log("  Fin page", numPage); break; }
-        console.log(" ", brutes.length, "annonces page", numPage);
-        for (const raw of brutes) {
-          try {
-            await delai(config.delaiEntreAnnonces.min, config.delaiEntreAnnonces.max);
-            const detail = await scraperDetailLBC(page, raw.url);
-            const annonce = parserAnnonce(raw, detail, zone);
-            if (annonce.fingerprint) annonces.push(annonce);
-          } catch(e) { console.warn("  Erreur annonce:", e.message); }
-        }
-        await delai(config.delaiEntrePages.min, config.delaiEntrePages.max);
-      } catch(e) { console.error("  Erreur page", numPage, e.message); }
-    }
-  } finally {
-    await browser.close();
-  }
-
-  console.log("LeBonCoin termine —", annonces.length, "annonces");
-  return annonces;
-}
-
-module.exports = { scraperLeBonCoin };
+module.exports = { scraperLeBonCoin: scraperLeBonCoinAPI };
