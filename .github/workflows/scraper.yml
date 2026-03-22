@@ -35,4 +35,4 @@ jobs:
           BREVO_SENDER_EMAIL: ${{ secrets.BREVO_SENDER_EMAIL }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           NODE_ENV: production
-        run: node scraper/index.js
+        run: node index.js
