@@ -13,6 +13,10 @@ const config = {
                      "68000", "68100", "68200", "68300"],
       // Pour LeBonCoin : paramètre de localisation dans l'URL
       lbcLocation: "Bas-Rhin__67",
+      lat: 48.5734,
+      lng: 7.7521,
+      radius: 80000,
+      regions: ["13"],
       papLocation: "alsace",
     }
   },
